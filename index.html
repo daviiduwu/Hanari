@@ -503,6 +503,8 @@
         <p><strong>Subject:</strong> ${result.clause.subject ?? "N/A"}</p>
         <p><strong>Auxiliary:</strong> ${result.clause.auxiliary ?? "N/A"}</p>
         <p><strong>Main verb:</strong> ${result.clause.mainVerb ?? "N/A"}</p>
+        <p><strong>Verb role:</strong> ${result.clause.verbRole ?? "N/A"}</p>
+        <p><strong>Predicate complement:</strong> ${result.clause.predicateComplement ?? "N/A"}</p>
         <p><strong>Aspect:</strong> ${result.clause.aspect}</p>
         <p><strong>Function:</strong> ${result.clause.function}</p>
       `
@@ -513,8 +515,8 @@
       renderExercises(result.exercises)
       renderProfile(result.profile)
       renderLinguisticLayers(result)
-      const firstWord = result.morphology?.[0] ?? null
-      renderWordDetails(firstWord)
+      const firstKnownWord = result.morphology?.find((m) => m.knowledge) ?? null
+      renderWordDetails(firstKnownWord ?? result.morphology?.[0] ?? null)
       renderHome(result.profile)
     }
 

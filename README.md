@@ -13,6 +13,7 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 - `src/linguistics/analyzer.js`
   - Núcleo lingüístico rule-based y multicapa.
   - Analiza cláusula, detecta errores, genera correcciones/ejercicios y evalúa respuestas.
+  - Incluye un módulo de inferencia heurística (IA local simbólica) para decidir entre lectura auxiliar vs copulativa.
   - Añade capas lingüísticas MVP: morfología, sintaxis (árbol morfosintáctico), semántica y pragmática.
 - `src/linguistics/errorProfile.js`
   - Perfil adaptativo por concepto usando `localStorage` (con fallback en memoria).

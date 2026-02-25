@@ -122,6 +122,29 @@ function isLikelyAdjective(token) {
   return ["late", "early", "ready", "happy", "sad", "tired"].includes(lower) || /y$|ful$|ous$|ive$|al$/.test(lower)
 }
 
+
+function isParticipleLike(token) {
+  const lower = token.toLowerCase()
+  return lower.endsWith("ing") || /ed$|en$/.test(lower)
+}
+
+function chooseClauseInterpretation({ auxiliary, predicateHead }) {
+  const aux = auxiliary?.toLowerCase()
+  const head = predicateHead?.toLowerCase() ?? ""
+
+  const scores = {
+    copular: 0,
+    auxiliaryChain: 0
+  }
+
+  if (BE_AUX.has(aux)) scores.copular += 1
+  if (isLikelyAdjective(head)) scores.copular += 2
+  if (FUNCTION_WORDS.has(head)) scores.auxiliaryChain += 2
+  if (isParticipleLike(head)) scores.auxiliaryChain += 3
+
+  return scores.copular >= scores.auxiliaryChain ? "copular" : "auxiliaryChain"
+}
+
 function findCopularPredicateHead(tokens, auxiliaryIndex, subjectIndex) {
   let candidate = null
 
@@ -147,23 +170,54 @@ function detectClauseCore(tokens) {
   if (AUXILIARIES.has(first) && PRONOUN_SUBJECTS.has(second)) {
     const auxiliaryIndex = 0
     const subject = tokens[1]
+
+    if (BE_AUX.has(first)) {
+      const predicateHead = findCopularPredicateHead(tokens, auxiliaryIndex, 1)
+      const interpretation = chooseClauseInterpretation({ auxiliary: tokens[0], predicateHead })
+
+      if (interpretation === "copular") {
+        return {
+          subject,
+          auxiliary: null,
+          auxiliaryIndex: -1,
+          mainVerb: tokens[0],
+          predicateComplement: predicateHead,
+          verbRole: "copular"
+        }
+      }
+    }
+
     const mainVerb = findMainVerb(tokens, auxiliaryIndex, 1)
-    return { subject, auxiliary: tokens[0], auxiliaryIndex, mainVerb }
+    return { subject, auxiliary: tokens[0], auxiliaryIndex, mainVerb, predicateComplement: null, verbRole: "auxiliary" }
   }
 
   // Imperative with politeness marker: "Please close..."
   if (first === "please") {
-    return { subject: "(you)", auxiliary: null, auxiliaryIndex: -1, mainVerb: tokens[1] ?? null }
+    return { subject: "(you)", auxiliary: null, auxiliaryIndex: -1, mainVerb: tokens[1] ?? null, predicateComplement: null, verbRole: "lexical" }
   }
 
   const subject = tokens[0] ?? null
   const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
   const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
-  const mainVerb = auxiliary && BE_AUX.has(auxiliary.toLowerCase())
-    ? findCopularPredicateHead(tokens, auxiliaryIndex, 0)
-    : findMainVerb(tokens, auxiliaryIndex, 0)
 
-  return { subject, auxiliary, auxiliaryIndex, mainVerb }
+  if (auxiliary && BE_AUX.has(auxiliary.toLowerCase())) {
+    const predicateHead = findCopularPredicateHead(tokens, auxiliaryIndex, 0)
+    const interpretation = chooseClauseInterpretation({ auxiliary, predicateHead })
+
+    if (interpretation === "copular") {
+      return {
+        subject,
+        auxiliary: null,
+        auxiliaryIndex: -1,
+        mainVerb: auxiliary,
+        predicateComplement: predicateHead,
+        verbRole: "copular"
+      }
+    }
+  }
+
+  const mainVerb = findMainVerb(tokens, auxiliaryIndex, 0)
+  return { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement: null, verbRole: auxiliary ? "auxiliary" : "lexical" }
 }
 
 function inferAspect(auxiliary, mainVerb) {
@@ -251,7 +305,7 @@ function buildSyntaxTree(clause, tokens) {
         children: [
           { label: "AUX", value: clause.auxiliary ?? "∅" },
           { label: "V", value: clause.mainVerb ?? "∅" },
-          { label: "XP", value: obj || predicateChunk || "∅" }
+          { label: "XP", value: (clause.predicateComplement ?? obj ?? predicateChunk ?? "∅") }
         ]
       }
     ]
@@ -276,7 +330,7 @@ function analyzeSemantics(clause, tokens) {
     roles: {
       agent: clause.subject,
       action: clause.mainVerb,
-      theme: tokens.slice(2).join(" ") || null
+      theme: clause.predicateComplement ?? (tokens.slice(2).join(" ") || null)
     },
     polarity: hasNegation ? "negative" : "positive",
     modality: MODAL_AUX.has((clause.auxiliary ?? "").toLowerCase()) ? clause.auxiliary.toLowerCase() : "none"
@@ -481,7 +535,8 @@ function detectErrors(sentence, clause, context = {}) {
   }
 
   const lowerSubject = clause.subject?.toLowerCase()
-  const lowerAux = clause.auxiliary?.toLowerCase()
+  const agreementAux = clause.auxiliary ?? (clause.verbRole === "copular" ? clause.mainVerb : null)
+  const lowerAux = agreementAux?.toLowerCase()
   const lowerMainVerb = clause.mainVerb?.toLowerCase()
   const tokens = context.tokens ?? []
   const auxiliaryIndex = context.auxiliaryIndex ?? -1
@@ -490,7 +545,7 @@ function detectErrors(sentence, clause, context = {}) {
     const suggestion = suggestAuxiliary(lowerSubject, lowerAux)
     errors.push(explainError("SUBJECT_AUX_AGREEMENT", {
       subject: clause.subject,
-      auxiliary: clause.auxiliary,
+      auxiliary: agreementAux,
       suggestion
     }))
   }
@@ -513,22 +568,23 @@ function detectErrors(sentence, clause, context = {}) {
 
   if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "") && !hasBeenAfterHave && !lexicalHaveCandidate) {
     errors.push(explainError("PERFECT_WITHOUT_PARTICIPLE", {
-      auxiliary: clause.auxiliary,
+      auxiliary: agreementAux,
       suggestion: "Use a past participle after have/has/had."
     }))
   }
 
 
-  if (lowerAux && BE_AUX.has(lowerAux) && ["he", "she", "it"].includes(lowerSubject || "")) {
+  if ((clause.verbRole === "copular" || (lowerAux && BE_AUX.has(lowerAux))) && ["he", "she", "it"].includes(lowerSubject || "")) {
+    const complementToken = (clause.predicateComplement ?? "").toLowerCase()
     const possessivePattern = tokens.findIndex((t) => ["my", "your", "his", "her", "our", "their"].includes(t.toLowerCase()))
-    if (possessivePattern >= 0) {
-      const complementToken = tokens[possessivePattern + 1]?.toLowerCase() ?? ""
-      if (complementToken.endsWith("s") && !complementToken.endsWith("ss")) {
-        errors.push(explainError("COPULAR_COMPLEMENT_AGREEMENT", {
-          complement: tokens[possessivePattern + 1],
-          suggestion: "Use singular noun after possessive determiner in this clause."
-        }))
-      }
+    const possessiveComplement = possessivePattern >= 0 ? tokens[possessivePattern + 1] : null
+    const candidate = possessiveComplement?.toLowerCase() || complementToken
+
+    if (candidate && candidate.endsWith("s") && !candidate.endsWith("ss")) {
+      errors.push(explainError("COPULAR_COMPLEMENT_AGREEMENT", {
+        complement: possessiveComplement ?? clause.predicateComplement,
+        suggestion: "Use singular noun after possessive determiner in this clause."
+      }))
     }
   }
 
@@ -580,13 +636,15 @@ export function analyze(sentence) {
     }
   }
 
-  const { subject, auxiliary, auxiliaryIndex, mainVerb } = detectClauseCore(tokens)
+  const { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement, verbRole } = detectClauseCore(tokens)
 
   const aspect = inferAspect(auxiliary, mainVerb)
   const clause = {
     subject,
     auxiliary,
     mainVerb,
+    predicateComplement: predicateComplement ?? null,
+    verbRole: verbRole ?? (auxiliary ? "auxiliary" : "lexical"),
     aspect,
     function: inferFunction(aspect)
   }
