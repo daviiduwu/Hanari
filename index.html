@@ -14,6 +14,10 @@
       --border: #e5e7eb;
       --success: #1f8b4c;
       --danger: #c0392b;
+      --sidebar-bg: #0f172a;
+      --sidebar-border: #334155;
+      --sidebar-hover: #1e293b;
+      --sidebar-text: #f8fafc;
     }
 
     * { box-sizing: border-box; }
@@ -23,6 +27,40 @@
       font-family: Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --card: #111a2e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #243047;
+      --primary: #60a5fa;
+      --sidebar-bg: #020617;
+      --sidebar-border: #1f2937;
+      --sidebar-hover: #111827;
+      --sidebar-text: #f3f4f6;
+    }
+
+    body.a11y-large-text {
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    body.a11y-high-contrast {
+      --bg: #000000;
+      --card: #000000;
+      --text: #ffffff;
+      --muted: #e5e7eb;
+      --border: #ffffff;
+      --primary: #facc15;
+      --success: #4ade80;
+      --danger: #f87171;
+      --sidebar-bg: #000000;
+      --sidebar-border: #ffffff;
+      --sidebar-hover: #111111;
+      --sidebar-text: #ffffff;
     }
 
     .layout {
@@ -32,9 +70,10 @@
     }
 
     .sidebar {
-      background: #0f172a;
-      color: #f8fafc;
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
       padding: 1rem;
+      transition: background-color 0.2s ease;
     }
 
     .brand {
@@ -65,8 +104,8 @@
 
     .menu button.active,
     .menu button:hover {
-      background: #1e293b;
-      border-color: #334155;
+      background: var(--sidebar-hover);
+      border-color: var(--sidebar-border);
     }
 
     .content {
@@ -110,7 +149,7 @@
 
     .placeholder { color: var(--muted); }
 
-    textarea, input[type="text"] {
+    textarea, input[type="text"], select {
       width: 100%;
       padding: 0.65rem;
       border: 1px solid var(--border);
@@ -281,6 +320,21 @@
       cursor: pointer;
     }
     .repo-list li { margin-bottom: 0.4rem; }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .setting-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: var(--card);
+    }
+
+    .setting-item h4 { margin: 0 0 0.35rem; }
     ul { padding-left: 1rem; }
 
     @media (max-width: 900px) {
@@ -531,7 +585,40 @@
       <section id="section-juegos" class="section"><article class="card"><h2>Juegos</h2><p class="placeholder">Módulo RPG lingüístico (próxima iteración).</p></article></section>
       <section id="section-comunidad" class="section"><article class="card"><h2>Comunidad</h2><p class="placeholder">Rankings, clubes y retos colaborativos.</p></article></section>
       <section id="section-donaciones" class="section"><article class="card"><h2>Donaciones</h2><p class="placeholder">Soporte al proyecto y roadmap comunitario.</p></article></section>
-      <section id="section-opciones" class="section"><article class="card"><h2>Opciones</h2><p class="placeholder">Preferencias de idioma, tema y accesibilidad.</p></article></section>
+      <section id="section-opciones" class="section">
+        <article class="card">
+          <h2>Opciones</h2>
+          <p>Configura tema visual, accesibilidad e idioma de interfaz para personalizar tu experiencia.</p>
+
+          <div class="settings-grid">
+            <section class="setting-item">
+              <h4>Tema</h4>
+              <p class="placeholder">Cambia entre claro y oscuro.</p>
+              <select id="themeSelect">
+                <option value="light">Claro</option>
+                <option value="dark">Oscuro</option>
+              </select>
+            </section>
+
+            <section class="setting-item">
+              <h4>Accesibilidad</h4>
+              <label><input type="checkbox" id="a11yLargeText"> Texto grande</label><br/>
+              <label><input type="checkbox" id="a11yHighContrast"> Alto contraste</label>
+            </section>
+
+            <section class="setting-item">
+              <h4>Idioma</h4>
+              <p class="placeholder">Idioma de la interfaz (MVP).</p>
+              <select id="languageSelect">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </section>
+          </div>
+
+          <p id="settingsStatus" class="placeholder"></p>
+        </article>
+      </section>
       <section id="section-signout" class="section"><article class="card"><h2>Sign out</h2><p class="placeholder">Cierre de sesión (pendiente de autenticación).</p></article></section>
     </main>
   </div>
@@ -577,6 +664,12 @@
     const importFlashcardsBtn = document.getElementById("importFlashcardsBtn")
     const flashcardImportStatus = document.getElementById("flashcardImportStatus")
     const flashcardBox = document.getElementById("flashcardBox")
+
+    const themeSelect = document.getElementById("themeSelect")
+    const a11yLargeText = document.getElementById("a11yLargeText")
+    const a11yHighContrast = document.getElementById("a11yHighContrast")
+    const languageSelect = document.getElementById("languageSelect")
+    const settingsStatus = document.getElementById("settingsStatus")
 
     let latestResult = null
     let latestProfile = getErrorProfile()
@@ -1042,6 +1135,81 @@
       }
     }
 
+    const SETTINGS_KEY = "hanari-settings-v1"
+
+    function defaultSettings() {
+      return {
+        theme: "light",
+        accessibility: {
+          largeText: false,
+          highContrast: false
+        },
+        language: "es"
+      }
+    }
+
+    function getSettings() {
+      try {
+        const raw = window.localStorage.getItem(SETTINGS_KEY)
+        if (!raw) return defaultSettings()
+        const parsed = JSON.parse(raw)
+        return {
+          ...defaultSettings(),
+          ...parsed,
+          accessibility: {
+            ...defaultSettings().accessibility,
+            ...(parsed.accessibility ?? {})
+          }
+        }
+      } catch {
+        return defaultSettings()
+      }
+    }
+
+    function saveSettings(settings) {
+      try {
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+      } catch {
+        // no-op
+      }
+    }
+
+    function applyLanguage(language) {
+      document.documentElement.lang = language
+      if (language === "en") {
+        if (settingsStatus) settingsStatus.textContent = "Settings saved."
+      } else {
+        if (settingsStatus) settingsStatus.textContent = "Ajustes guardados."
+      }
+    }
+
+    function applySettingsToUi(settings) {
+      document.body.setAttribute("data-theme", settings.theme === "dark" ? "dark" : "light")
+      document.body.classList.toggle("a11y-large-text", !!settings.accessibility.largeText)
+      document.body.classList.toggle("a11y-high-contrast", !!settings.accessibility.highContrast)
+
+      if (themeSelect) themeSelect.value = settings.theme
+      if (a11yLargeText) a11yLargeText.checked = !!settings.accessibility.largeText
+      if (a11yHighContrast) a11yHighContrast.checked = !!settings.accessibility.highContrast
+      if (languageSelect) languageSelect.value = settings.language
+
+      applyLanguage(settings.language)
+    }
+
+    function updateSettings(patch) {
+      const settings = getSettings()
+      const next = {
+        ...settings,
+        ...patch,
+        accessibility: {
+          ...settings.accessibility,
+          ...(patch.accessibility ?? {})
+        }
+      }
+      saveSettings(next)
+      applySettingsToUi(next)
+    }
+
     function switchSection(sectionId) {
       sections.forEach((section) => {
         section.classList.toggle("active", section.id === `section-${sectionId}`)
@@ -1060,6 +1228,30 @@
 
     if (importFlashcardsBtn) {
       importFlashcardsBtn.addEventListener("click", importFlashcardsFromGithub)
+    }
+
+    if (themeSelect) {
+      themeSelect.addEventListener("change", () => {
+        updateSettings({ theme: themeSelect.value })
+      })
+    }
+
+    if (a11yLargeText) {
+      a11yLargeText.addEventListener("change", () => {
+        updateSettings({ accessibility: { largeText: a11yLargeText.checked } })
+      })
+    }
+
+    if (a11yHighContrast) {
+      a11yHighContrast.addEventListener("change", () => {
+        updateSettings({ accessibility: { highContrast: a11yHighContrast.checked } })
+      })
+    }
+
+    if (languageSelect) {
+      languageSelect.addEventListener("change", () => {
+        updateSettings({ language: languageSelect.value })
+      })
     }
 
     function calculateGlobalLevel(profile) {
@@ -1309,6 +1501,7 @@
       switchSection("herramientas")
     })
 
+    applySettingsToUi(getSettings())
     loadFlashcards()
     pickNextFlashcard()
     renderHome(latestProfile)
