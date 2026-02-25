@@ -9,24 +9,45 @@
 
 <h2>English Linguistics Trainer</h2>
 
-<p>Analyze the sentence:</p>
+<p>Escribe una oración en inglés para analizarla:</p>
 
-<h3>She is studying English.</h3>
+<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
 
-<button onclick="showAnalysis()">Show linguistic analysis</button>
+<button onclick="analyzeSentence()">Analizar oración</button>
 
-<div id="analysis"></div>
+<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
 
 <script>
-function showAnalysis() {
-  document.getElementById("analysis").innerHTML =
-    `
-    Subject: She<br>
-    Auxiliary verb: is<br>
-    Main verb: studying<br>
-    Aspect: Progressive<br>
-    Function: ongoing action
-    `;
+function analyzeSentence() {
+  const sentence = document.getElementById("sentenceInput").value;
+
+  // Inicializamos variables
+  let subject = "No identificado";
+  let auxiliary = "No identificado";
+  let mainVerb = "No identificado";
+  let aspect = "No identificado";
+  let func = "No identificado";
+
+  // Patrón muy básico para oraciones como "She is studying English"
+  const words = sentence.split(" ");
+
+  if(words.length >= 3) {
+    subject = words[0];
+    auxiliary = words[1];
+    mainVerb = words[2];
+    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
+    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
+  }
+
+  // Mostrar resultado
+  document.getElementById("analysis").innerHTML = `
+    <strong>Oración analizada:</strong> ${sentence}<br>
+    Subject: ${subject}<br>
+    Auxiliary verb: ${auxiliary}<br>
+    Main verb: ${mainVerb}<br>
+    Aspect: ${aspect}<br>
+    Function: ${func}
+  `;
 }
 </script>
 
