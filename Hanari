@@ -1,13 +1,2 @@
-index.html
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My App</title>
-</head>
-<body>
-  <h1>Hello App</h1>
-  <button onclick="alert('App funcionando')">
-    Test App
-  </button>
-</body>
-</html>
+Este archivo era un artefacto temporal y se mantiene solo por compatibilidad histórica.
+La aplicación activa vive en `index.html` y en `src/`.
