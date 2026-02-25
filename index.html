@@ -220,6 +220,10 @@
           <h3>Morfología</h3>
           <ul id="morphologyResult"></ul>
         </section>
+        <section class="card">
+          <h3>Menú léxico de palabra seleccionada</h3>
+          <div id="wordDetailResult" class="placeholder">Selecciona una palabra en Morfología para ver etimología, IPA y uso en oración.</div>
+        </section>
 
         <section class="card">
           <h3>Sintaxis (árbol morfosintáctico)</h3>
@@ -270,11 +274,13 @@
     const syntaxResult = document.getElementById("syntaxResult")
     const semanticsResult = document.getElementById("semanticsResult")
     const pragmaticsResult = document.getElementById("pragmaticsResult")
+    const wordDetailResult = document.getElementById("wordDetailResult")
     const analyzeBtn = document.getElementById("analyzeBtn")
 
     let latestResult = null
     let latestProfile = getErrorProfile()
     let exerciseStates = {}
+    let selectedWordKey = null
 
     function switchSection(sectionId) {
       sections.forEach((section) => {
@@ -337,10 +343,40 @@
     }
 
     
+    
+    function renderWordDetails(wordEntry) {
+      if (!wordEntry || !wordEntry.knowledge) {
+        wordDetailResult.innerHTML = `<p class="placeholder">Sin entrada de corpus para esta palabra todavía.</p>`
+        return
+      }
+
+      const k = wordEntry.knowledge
+      wordDetailResult.innerHTML = `
+        <p><strong>Palabra:</strong> ${wordEntry.token}</p>
+        <p><strong>IPA:</strong> ${k.ipa}</p>
+        <p><strong>Qué es:</strong> ${k.wordClass}</p>
+        <p><strong>Etimología:</strong> ${k.etymology}</p>
+        <p><strong>Significado:</strong> ${k.meaning}</p>
+        <p><strong>Uso en oración:</strong> ${k.usage}</p>
+        <p><strong>Nota didáctica:</strong> ${k.notes}</p>
+      `
+    }
+
+    function selectWord(token) {
+      if (!latestResult?.morphology) return
+      selectedWordKey = token
+      const wordEntry = latestResult.morphology.find((m) => m.token === token)
+      renderWordDetails(wordEntry)
+      renderLinguisticLayers(latestResult)
+    }
+
+    window.selectWord = selectWord
+
     function renderLinguisticLayers(result) {
-      morphologyResult.innerHTML = (result.morphology ?? []).map((m) =>
-        `<li><strong>${m.token}</strong> → lemma: ${m.lemma}, pos: ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
-      ).join("") || "<li>Sin datos morfológicos.</li>"
+      morphologyResult.innerHTML = (result.morphology ?? []).map((m) => {
+        const active = selectedWordKey === m.token ? "style=\"font-weight:700;\"" : ""
+        return `<li><button type="button" onclick="selectWord('${m.token}')" ${active}>${m.token}</button> → lemma: ${m.lemma}, pos: ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
+      }).join("") || "<li>Sin datos morfológicos.</li>"
 
       syntaxResult.textContent = result.syntax?.bracketed ?? "Sin árbol sintáctico."
 
@@ -447,6 +483,7 @@
       latestResult = result
       latestProfile = result.profile
       exerciseStates = {}
+      selectedWordKey = null
 
       if (!result.clause) {
         clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
@@ -455,6 +492,7 @@
         renderExercises(result.exercises)
         renderProfile(result.profile)
         renderLinguisticLayers(result)
+        renderWordDetails(null)
         renderHome(result.profile)
         return
       }
@@ -474,6 +512,8 @@
       renderExercises(result.exercises)
       renderProfile(result.profile)
       renderLinguisticLayers(result)
+      const firstWord = result.morphology?.[0] ?? null
+      renderWordDetails(firstWord)
       renderHome(result.profile)
     }
 

@@ -17,6 +17,9 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 - `src/linguistics/errorProfile.js`
   - Perfil adaptativo por concepto usando `localStorage` (con fallback en memoria).
   - Acumula errores de entrada y resultados de ejercicios (`aciertos/fallos/mastery/streak`).
+- `src/linguistics/corpora/etymologyIpaCorpus.js`
+  - Mini corpus abierto inicial (etimología + fonología IPA + uso).
+  - Se consulta desde morfología para mostrar menú léxico por palabra seleccionada.
 - `src/components/App.jsx` y `src/components/TestAnalyzer.jsx`
   - Variante React de pruebas del mismo flujo.
   - Reutiliza el mismo motor para no duplicar reglas.
@@ -36,10 +39,11 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 6. Genera ejercicios por concepto con texto libre, selección única y selección múltiple.
 7. Evalúa respuestas del usuario, registra aciertos/fallos y adapta la dificultad.
 8. Entrega capas lingüísticas visibles para aprendizaje:
-   - morfología (lemma, POS y rasgos),
+   - morfología (lemma, POS, rasgos y enlace a corpus etimológico/fonológico),
    - árbol sintáctico en formato bracket,
    - roles semánticos básicos,
    - inferencia pragmática (acto de habla, cortesía, intención).
+9. Permite seleccionar palabras para abrir un menú léxico con: IPA, etimología, clase de palabra, significado y ejemplo de uso en oración.
 
 ## Siguiente paso incremental (recomendado)
 

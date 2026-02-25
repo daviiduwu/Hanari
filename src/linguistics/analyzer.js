@@ -8,6 +8,7 @@ import {
   recordConceptErrors,
   recordExerciseOutcome
 } from "./errorProfile.js"
+import { getWordKnowledge } from "./corpora/etymologyIpaCorpus.js"
 
 const AUXILIARIES = new Set([
   "am", "is", "are", "was", "were", "be", "been", "being",
@@ -202,11 +203,14 @@ function analyzeMorphology(tokens) {
     if (/ed$|en$/.test(lower)) features.push("participle-or-past")
     if (lower.endsWith("s") && lower.length > 2) features.push("-s-suffix")
 
+    const knowledge = getWordKnowledge(lemma) ?? getWordKnowledge(token)
+
     return {
       token,
       lemma,
       pos: inferPos(token, tags),
-      features
+      features,
+      knowledge
     }
   })
 }
