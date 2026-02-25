@@ -7,9 +7,28 @@
 
 <h1>Mi app funciona</h1>
 
-<button onclick="alert('Hola desde mi app')">
-Probar
-</button>
+<h2>English Linguistics Trainer</h2>
+
+<p>Analyze the sentence:</p>
+
+<h3>She is studying English.</h3>
+
+<button onclick="showAnalysis()">Show linguistic analysis</button>
+
+<div id="analysis"></div>
+
+<script>
+function showAnalysis() {
+  document.getElementById("analysis").innerHTML =
+    `
+    Subject: She<br>
+    Auxiliary verb: is<br>
+    Main verb: studying<br>
+    Aspect: Progressive<br>
+    Function: ongoing action
+    `;
+}
+</script>
 
 </body>
 </html>
