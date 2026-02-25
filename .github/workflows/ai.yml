@@ -1,0 +1,11 @@
+name: AI Helper
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: AI message
+        run: echo "La IA está trabajando en tu proyecto"
