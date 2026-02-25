@@ -1,53 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Hanari</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanari · English Linguistics Trainer</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; }
+    textarea, input[type="text"] { width: 100%; min-height: 44px; padding: 0.6rem; box-sizing: border-box; }
+    button { margin-top: 0.75rem; padding: 0.55rem 0.9rem; }
+    .card { margin-top: 1rem; border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem; }
+    .error { border-left: 4px solid #c0392b; padding-left: 0.75rem; margin: 0.75rem 0; }
+    .ok { color: #1f8b4c; }
+    .exercise { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px dashed #ddd; }
+    .feedback { margin-top: 0.4rem; font-size: 0.95rem; }
+    ul { padding-left: 1rem; }
+    .pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; background: #f2f2f2; font-size: 0.8rem; }
+  </style>
 </head>
 <body>
+  <h1>Hanari · Entrenador lingüístico de inglés</h1>
+  <p>Analiza, corrige y entrena con adaptación real por concepto.</p>
 
-<h1>English Linguistics Trainer</h1>
+  <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+  <button id="analyzeBtn">Analizar oración</button>
 
-<p>Escribe una oración en inglés para analizarla:</p>
+  <section id="clauseResult" class="card"></section>
+  <section id="feedbackResult" class="card"></section>
+  <section class="card">
+    <h3>Tokens y etiquetas</h3>
+    <ul id="tokenResult"></ul>
+  </section>
+  <section class="card">
+    <h3>Perfil adaptativo</h3>
+    <ul id="profileResult"></ul>
+  </section>
+  <section class="card">
+    <h3>Ejercicios generados</h3>
+    <div id="exerciseResult"></div>
+  </section>
 
-<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+  <script type="module">
+    import { analyze, evaluateExercise } from "./src/linguistics/analyzer.js"
 
-<button onclick="analyzeSentence()">Analizar oración</button>
+    const sentenceInput = document.getElementById("sentenceInput")
+    const clauseResult = document.getElementById("clauseResult")
+    const feedbackResult = document.getElementById("feedbackResult")
+    const tokenResult = document.getElementById("tokenResult")
+    const exerciseResult = document.getElementById("exerciseResult")
+    const profileResult = document.getElementById("profileResult")
+    const analyzeBtn = document.getElementById("analyzeBtn")
 
-<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
+    let latestResult = null
+    let latestProfile = null
+    let exerciseStates = {}
 
-<script>
-function analyzeSentence() {
-  const sentence = document.getElementById("sentenceInput").value;
+    function renderFeedback(result) {
+      if (!result.errors.length) {
+        feedbackResult.innerHTML = `<h3 class="ok">Sin errores detectados</h3><p>La oración pasa las reglas actuales del MVP.</p>`
+        return
+      }
 
-  // Inicializamos variables
-  let subject = "No identificado";
-  let auxiliary = "No identificado";
-  let mainVerb = "No identificado";
-  let aspect = "No identificado";
-  let func = "No identificado";
+      const errorsHtml = result.errors.map((err) => `
+        <article class="error">
+          <strong>${err.title}</strong>
+          <p><strong>Qué está mal:</strong> ${err.explanation}</p>
+          <p><strong>Por qué:</strong> ${err.why}</p>
+          <p><strong>Sugerencia:</strong> ${err.suggestion}</p>
+        </article>
+      `).join("")
 
-  // Patrón muy básico para oraciones como "She is studying English"
-  const words = sentence.split(" ");
+      feedbackResult.innerHTML = `
+        <h3>Corrección y explicación</h3>
+        <p><strong>Oración sugerida:</strong> ${result.correction}</p>
+        ${errorsHtml}
+      `
+    }
 
-  if(words.length >= 3) {
-    subject = words[0];
-    auxiliary = words[1];
-    mainVerb = words[2];
-    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
-    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
-  }
+    function renderProfile(profile) {
+      const concepts = Object.entries(profile?.concepts ?? {})
+      profileResult.innerHTML = concepts.length
+        ? concepts.map(([name, stats]) => `
+            <li>
+              <strong>${name}</strong> · intentos: ${stats.attempts} · aciertos: ${stats.correct} · fallos: ${stats.mistakes} · mastery: ${(stats.mastery * 100).toFixed(0)}%
+            </li>
+          `).join("")
+        : "<li>Sin historial todavía.</li>"
+    }
 
-  // Mostrar resultado
-  document.getElementById("analysis").innerHTML = `
-    <strong>Oración analizada:</strong> ${sentence}<br>
-    Subject: ${subject}<br>
-    Auxiliary verb: ${auxiliary}<br>
-    Main verb: ${mainVerb}<br>
-    Aspect: ${aspect}<br>
-    Function: ${func}
-  `;
-}
-</script>
+    function readExerciseAnswer(exercise) {
+      if (exercise.type === "single-choice") {
+        const checked = document.querySelector(`input[name='${exercise.id}']:checked`)
+        return checked ? checked.value : ""
+      }
 
+      if (exercise.type === "multi-select") {
+        return Array.from(document.querySelectorAll(`input[name='${exercise.id}']:checked`)).map((el) => el.value)
+      }
+
+      return document.getElementById(`answer-${exercise.id}`)?.value ?? ""
+    }
+
+    function buildExerciseFields(exercise) {
+      if (exercise.type === "single-choice") {
+        return (exercise.options ?? []).map((opt) => `
+          <label><input type="radio" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>
+        `).join("")
+      }
+
+      if (exercise.type === "multi-select") {
+        return (exercise.options ?? []).map((opt) => `
+          <label><input type="checkbox" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>
+        `).join("")
+      }
+
+      return `<input id="answer-${exercise.id}" type="text" placeholder="Escribe tu respuesta" />`
+    }
+
+    function submitExercise(exerciseId) {
+      const exercise = latestResult?.exercises?.find((item) => item.id === exerciseId)
+      if (!exercise) return
+
+      const userAnswer = readExerciseAnswer(exercise)
+      const evaluation = evaluateExercise(exercise, userAnswer)
+      latestProfile = evaluation.profile
+      exerciseStates[exerciseId] = {
+        isCorrect: evaluation.isCorrect,
+        feedback: evaluation.feedback,
+        expectedAnswers: evaluation.expectedAnswers
+      }
+
+      renderExercises(latestResult.exercises)
+      renderProfile(latestProfile)
+    }
+
+    window.submitExercise = submitExercise
+
+    function renderExercises(exercises) {
+      if (!exercises.length) {
+        exerciseResult.innerHTML = "<p>No hay ejercicios porque no se detectaron errores.</p>"
+        return
+      }
+
+      exerciseResult.innerHTML = exercises.map((exercise) => {
+        const status = exerciseStates[exercise.id]
+        const reveal = status && !status.isCorrect
+
+        return `
+          <article class="exercise" id="exercise-${exercise.id}">
+            <div><strong>${exercise.type}</strong> <span class="pill">${exercise.difficulty}</span> <span class="pill">${exercise.focus}</span></div>
+            <p>${exercise.prompt}</p>
+            <div>${buildExerciseFields(exercise)}</div>
+            <button type="button" onclick="submitExercise('${exercise.id}')">Responder</button>
+            ${status ? `<p class="feedback">${status.feedback}</p>` : ""}
+            ${reveal ? `<p class="feedback"><strong>Respuesta esperada:</strong> ${status.expectedAnswers.join(" | ")}</p>` : ""}
+          </article>
+        `
+      }).join("")
+    }
+
+    function render(result) {
+      latestResult = result
+      latestProfile = result.profile
+      exerciseStates = {}
+
+      if (!result.clause) {
+        clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
+        tokenResult.innerHTML = ""
+        renderFeedback(result)
+        renderExercises(result.exercises)
+        renderProfile(result.profile)
+        return
+      }
+
+      clauseResult.innerHTML = `
+        <h3>Estructura de cláusula</h3>
+        <p><strong>Subject:</strong> ${result.clause.subject ?? "N/A"}</p>
+        <p><strong>Auxiliary:</strong> ${result.clause.auxiliary ?? "N/A"}</p>
+        <p><strong>Main verb:</strong> ${result.clause.mainVerb ?? "N/A"}</p>
+        <p><strong>Aspect:</strong> ${result.clause.aspect}</p>
+        <p><strong>Function:</strong> ${result.clause.function}</p>
+      `
+
+      tokenResult.innerHTML = result.tokens
+        .map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`)
+        .join("")
+
+      renderFeedback(result)
+      renderExercises(result.exercises)
+      renderProfile(result.profile)
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+      const result = analyze(sentenceInput.value)
+      render(result)
+    })
+  </script>
 </body>
 </html>
