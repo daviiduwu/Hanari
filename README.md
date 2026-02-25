@@ -31,11 +31,12 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 
 1. Muestra página principal con nivel estimado del usuario (según mastery global).
 2. Permite navegar por menú modular pensado para escalar producto real.
-3. En Herramientas, analiza la cláusula (`subject`, `auxiliary`, `mainVerb`, `aspect`, `function`).
+3. En Herramientas, analiza la cláusula (`subject`, `auxiliary`, `mainVerb`, `predicateComplement`, `verbRole`, `aspect`, `function`).
 4. Detecta errores gramaticales iniciales:
    - concordancia sujeto-auxiliar,
    - progresivo sin auxiliar,
    - perfecto sin participio.
+   - desacuerdo en complemento nominal copulativo (ej. `She is my girlfriends`).
 5. Explica cada error en lenguaje pedagógico y propone corrección.
 6. Genera ejercicios por concepto con texto libre, selección única y selección múltiple.
 7. Evalúa respuestas del usuario, registra aciertos/fallos y adapta la dificultad.

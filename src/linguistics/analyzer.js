@@ -158,6 +158,24 @@ function findCopularPredicateHead(tokens, auxiliaryIndex, subjectIndex) {
   return candidate ?? findMainVerb(tokens, auxiliaryIndex, subjectIndex)
 }
 
+
+function isLikelyLexicalHaveCore(tokens, auxiliaryIndex, lowerMainVerb) {
+  if (auxiliaryIndex < 0) return false
+
+  const nextToken = tokens[auxiliaryIndex + 1]?.toLowerCase() ?? ""
+  const nextNextToken = tokens[auxiliaryIndex + 2]?.toLowerCase() ?? ""
+
+  if (nextToken === "to") return true
+  if (DETERMINERS.has(nextToken)) return true
+  if (COMMON_HAVE_OBJECTS.has(nextToken)) return true
+  if (DETERMINERS.has(nextToken) && nextNextToken && !AUXILIARIES.has(nextNextToken)) return true
+
+  const noPerfectMarkers = !/ed$|en$/.test(lowerMainVerb || "") && nextToken !== "been"
+  if (noPerfectMarkers && COMMON_HAVE_OBJECTS.has(lowerMainVerb || "")) return true
+
+  return false
+}
+
 function detectClauseCore(tokens) {
   if (tokens.length === 0) {
     return { subject: null, auxiliary: null, auxiliaryIndex: -1, mainVerb: null }
@@ -200,6 +218,20 @@ function detectClauseCore(tokens) {
   const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
   const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
 
+  if (auxiliary && HAVE_AUX.has(auxiliary.toLowerCase())) {
+    const candidateAfterHave = findMainVerb(tokens, auxiliaryIndex, 0)
+    if (isLikelyLexicalHaveCore(tokens, auxiliaryIndex, candidateAfterHave?.toLowerCase())) {
+      return {
+        subject,
+        auxiliary: null,
+        auxiliaryIndex: -1,
+        mainVerb: auxiliary,
+        predicateComplement: candidateAfterHave,
+        verbRole: "lexical"
+      }
+    }
+  }
+
   if (auxiliary && BE_AUX.has(auxiliary.toLowerCase())) {
     const predicateHead = findCopularPredicateHead(tokens, auxiliaryIndex, 0)
     const interpretation = chooseClauseInterpretation({ auxiliary, predicateHead })
@@ -220,20 +252,31 @@ function detectClauseCore(tokens) {
   return { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement: null, verbRole: auxiliary ? "auxiliary" : "lexical" }
 }
 
-function inferAspect(auxiliary, mainVerb) {
+function inferAspect(auxiliary, mainVerb, tokens = [], auxiliaryIndex = -1) {
   if (!auxiliary || !mainVerb) return "simple"
 
   const aux = auxiliary.toLowerCase()
   const verb = mainVerb.toLowerCase()
 
   if (BE_AUX.has(aux) && verb.endsWith("ing")) return "progressive"
-  if (HAVE_AUX.has(aux) && /ed$|en$/.test(verb)) return "perfect"
+
+  if (HAVE_AUX.has(aux)) {
+    if (/ed$|en$/.test(verb)) return "perfect"
+
+    const hasBeenAfterHave = auxiliaryIndex >= 0
+      ? tokens.slice(auxiliaryIndex + 1).some((token) => token.toLowerCase() === "been")
+      : false
+
+    if (hasBeenAfterHave && verb.endsWith("ing")) return "perfect-progressive"
+  }
+
   return "simple"
 }
 
 function inferFunction(aspect) {
   if (aspect === "progressive") return "acción en curso"
   if (aspect === "perfect") return "resultado o experiencia conectada al presente/pasado"
+  if (aspect === "perfect-progressive") return "proceso en desarrollo con referencia temporal previa"
   return "hecho habitual o general"
 }
 
@@ -506,26 +549,6 @@ function generateExercises(errors, clause, profile) {
 }
 
 
-function isLikelyLexicalHave(tokens, auxiliaryIndex, lowerMainVerb) {
-  if (auxiliaryIndex < 0) return false
-
-  const nextToken = tokens[auxiliaryIndex + 1]?.toLowerCase() ?? ""
-  const nextNextToken = tokens[auxiliaryIndex + 2]?.toLowerCase() ?? ""
-
-  if (nextToken === "to") return true
-  if (DETERMINERS.has(nextToken)) return true
-  if (COMMON_HAVE_OBJECTS.has(nextToken)) return true
-
-  // Pattern: have + determiner + noun
-  if (DETERMINERS.has(nextToken) && nextNextToken && !AUXILIARIES.has(nextNextToken)) return true
-
-  // If main verb looks nominal-ish and no perfect markers around, treat as lexical-have candidate.
-  const noPerfectMarkers = !/ed$|en$/.test(lowerMainVerb || "") && nextToken !== "been"
-  if (noPerfectMarkers && COMMON_HAVE_OBJECTS.has(lowerMainVerb || "")) return true
-
-  return false
-}
-
 function detectErrors(sentence, clause, context = {}) {
   const errors = []
 
@@ -563,7 +586,7 @@ function detectErrors(sentence, clause, context = {}) {
     : false
 
   const lexicalHaveCandidate = lowerAux && HAVE_AUX.has(lowerAux)
-    ? isLikelyLexicalHave(tokens, auxiliaryIndex, lowerMainVerb)
+    ? isLikelyLexicalHaveCore(tokens, auxiliaryIndex, lowerMainVerb)
     : false
 
   if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "") && !hasBeenAfterHave && !lexicalHaveCandidate) {
@@ -638,7 +661,7 @@ export function analyze(sentence) {
 
   const { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement, verbRole } = detectClauseCore(tokens)
 
-  const aspect = inferAspect(auxiliary, mainVerb)
+  const aspect = inferAspect(auxiliary, mainVerb, tokens, auxiliaryIndex)
   const clause = {
     subject,
     auxiliary,
