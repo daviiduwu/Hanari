@@ -1,53 +1,529 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Hanari</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanari · English Linguistics Trainer</title>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --border: #e5e7eb;
+      --success: #1f8b4c;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 1rem;
+    }
+
+    .brand {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #e2e8f0;
+      background: transparent;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .menu button.active,
+    .menu button:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .content {
+      padding: 1rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero h2 { margin-top: 0; }
+
+    .level {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .placeholder { color: var(--muted); }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+    }
+
+    button.primary {
+      margin-top: 0.7rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 0.95rem;
+      cursor: pointer;
+    }
+
+    .error {
+      border-left: 4px solid var(--danger);
+      padding-left: 0.7rem;
+      margin: 0.7rem 0;
+    }
+
+    .ok { color: var(--success); }
+    .exercise { border-top: 1px dashed var(--border); padding-top: 0.75rem; margin-top: 0.75rem; }
+    .feedback { margin-top: 0.45rem; font-size: 0.95rem; }
+    ul { padding-left: 1rem; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 10; }
+      .menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
 </head>
 <body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1 class="brand">Hanari</h1>
+      <ul class="menu" id="menuList">
+        <li><button class="active" data-section="home">Inicio</button></li>
+        <li><button data-section="yo">Yo (usuario)</button></li>
+        <li><button data-section="recursos">Recursos</button></li>
+        <li><button data-section="herramientas">Herramientas</button></li>
+        <li><button data-section="juegos">Juegos</button></li>
+        <li><button data-section="comunidad">Comunidad</button></li>
+        <li><button data-section="donaciones">Donaciones</button></li>
+        <li><button data-section="opciones">Opciones</button></li>
+        <li><button data-section="signout">Sign out</button></li>
+      </ul>
+    </aside>
 
-<h1>English Linguistics Trainer</h1>
+    <main class="content">
+      <section id="section-home" class="section active">
+        <article class="card hero">
+          <h2>Página principal</h2>
+          <p>Aprende inglés como sistema lingüístico: estructura, auxiliares, aspecto verbal y concordancia.</p>
+          <div class="level">
+            <div>
+              <strong>Nivel actual:</strong> <span id="userLevel">Nivel 1 · Inicio</span>
+              <p id="levelDetails" class="placeholder">Aún no hay suficientes intentos para calcular progresión fina.</p>
+            </div>
+            <div>
+              <span class="pill" id="masteryPill">Mastery global: 0%</span>
+            </div>
+          </div>
+        </article>
+      </section>
 
-<p>Escribe una oración en inglés para analizarla:</p>
+      <section id="section-yo" class="section">
+        <article class="card">
+          <h2>Yo (usuario)</h2>
+          <p class="placeholder">Aquí irá perfil, streak diario, logros y progreso por concepto.</p>
+        </article>
+      </section>
 
-<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+      <section id="section-recursos" class="section">
+        <article class="card">
+          <h2>Recursos</h2>
+          <p class="placeholder">Zona para transcripciones, lecturas y recursos lingüísticos curados.</p>
+        </article>
+      </section>
 
-<button onclick="analyzeSentence()">Analizar oración</button>
+      <section id="section-herramientas" class="section">
+        <article class="card">
+          <h2>Herramientas · Analizador de oraciones</h2>
+          <p>Analiza, corrige y entrena con adaptación por concepto.</p>
 
-<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
+          <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+          <button id="analyzeBtn" class="primary">Analizar oración</button>
+        </article>
 
-<script>
-function analyzeSentence() {
-  const sentence = document.getElementById("sentenceInput").value;
+        <section id="clauseResult" class="card"></section>
+        <section id="feedbackResult" class="card"></section>
 
-  // Inicializamos variables
-  let subject = "No identificado";
-  let auxiliary = "No identificado";
-  let mainVerb = "No identificado";
-  let aspect = "No identificado";
-  let func = "No identificado";
+        <section class="card">
+          <h3>Tokens y etiquetas</h3>
+          <ul id="tokenResult"></ul>
+        </section>
 
-  // Patrón muy básico para oraciones como "She is studying English"
-  const words = sentence.split(" ");
+        <section class="card">
+          <h3>Perfil adaptativo</h3>
+          <ul id="profileResult"></ul>
+        </section>
 
-  if(words.length >= 3) {
-    subject = words[0];
-    auxiliary = words[1];
-    mainVerb = words[2];
-    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
-    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
-  }
+        <section class="card">
+          <h3>Morfología</h3>
+          <ul id="morphologyResult"></ul>
+        </section>
+        <section class="card">
+          <h3>Menú léxico de palabra seleccionada</h3>
+          <div id="wordDetailResult" class="placeholder">Selecciona una palabra en Morfología para ver etimología, IPA y uso en oración.</div>
+        </section>
 
-  // Mostrar resultado
-  document.getElementById("analysis").innerHTML = `
-    <strong>Oración analizada:</strong> ${sentence}<br>
-    Subject: ${subject}<br>
-    Auxiliary verb: ${auxiliary}<br>
-    Main verb: ${mainVerb}<br>
-    Aspect: ${aspect}<br>
-    Function: ${func}
-  `;
-}
-</script>
+        <section class="card">
+          <h3>Sintaxis (árbol morfosintáctico)</h3>
+          <pre id="syntaxResult" style="white-space: pre-wrap;"></pre>
+        </section>
 
+        <section class="card">
+          <h3>Semántica</h3>
+          <ul id="semanticsResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Pragmática</h3>
+          <ul id="pragmaticsResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Ejercicios generados</h3>
+          <div id="exerciseResult"></div>
+        </section>
+      </section>
+
+      <section id="section-juegos" class="section"><article class="card"><h2>Juegos</h2><p class="placeholder">Módulo RPG lingüístico (próxima iteración).</p></article></section>
+      <section id="section-comunidad" class="section"><article class="card"><h2>Comunidad</h2><p class="placeholder">Rankings, clubes y retos colaborativos.</p></article></section>
+      <section id="section-donaciones" class="section"><article class="card"><h2>Donaciones</h2><p class="placeholder">Soporte al proyecto y roadmap comunitario.</p></article></section>
+      <section id="section-opciones" class="section"><article class="card"><h2>Opciones</h2><p class="placeholder">Preferencias de idioma, tema y accesibilidad.</p></article></section>
+      <section id="section-signout" class="section"><article class="card"><h2>Sign out</h2><p class="placeholder">Cierre de sesión (pendiente de autenticación).</p></article></section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { analyze, evaluateExercise } from "./src/linguistics/analyzer.js"
+    import { getErrorProfile } from "./src/linguistics/errorProfile.js"
+
+    const menuList = document.getElementById("menuList")
+    const sections = Array.from(document.querySelectorAll(".section"))
+    const userLevel = document.getElementById("userLevel")
+    const levelDetails = document.getElementById("levelDetails")
+    const masteryPill = document.getElementById("masteryPill")
+
+    const sentenceInput = document.getElementById("sentenceInput")
+    const clauseResult = document.getElementById("clauseResult")
+    const feedbackResult = document.getElementById("feedbackResult")
+    const tokenResult = document.getElementById("tokenResult")
+    const exerciseResult = document.getElementById("exerciseResult")
+    const profileResult = document.getElementById("profileResult")
+    const morphologyResult = document.getElementById("morphologyResult")
+    const syntaxResult = document.getElementById("syntaxResult")
+    const semanticsResult = document.getElementById("semanticsResult")
+    const pragmaticsResult = document.getElementById("pragmaticsResult")
+    const wordDetailResult = document.getElementById("wordDetailResult")
+    const analyzeBtn = document.getElementById("analyzeBtn")
+
+    let latestResult = null
+    let latestProfile = getErrorProfile()
+    let exerciseStates = {}
+    let selectedWordKey = null
+
+    function switchSection(sectionId) {
+      sections.forEach((section) => {
+        section.classList.toggle("active", section.id === `section-${sectionId}`)
+      })
+
+      menuList.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.section === sectionId)
+      })
+    }
+
+    menuList.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-section]")
+      if (!btn) return
+      switchSection(btn.dataset.section)
+    })
+
+    function calculateGlobalLevel(profile) {
+      const concepts = Object.values(profile?.concepts ?? {})
+      if (!concepts.length) {
+        return { label: "Nivel 1 · Inicio", mastery: 0, detail: "Aún no hay suficientes intentos para calcular progresión fina." }
+      }
+
+      const avgMastery = concepts.reduce((acc, s) => acc + (s.mastery ?? 0), 0) / concepts.length
+      const level = Math.max(1, Math.min(20, Math.floor(avgMastery * 20) || 1))
+      return {
+        label: `Nivel ${level}`,
+        mastery: avgMastery,
+        detail: `Progreso estimado con ${concepts.length} conceptos activos.`
+      }
+    }
+
+    function renderHome(profile) {
+      const levelData = calculateGlobalLevel(profile)
+      userLevel.textContent = levelData.label
+      masteryPill.textContent = `Mastery global: ${(levelData.mastery * 100).toFixed(0)}%`
+      levelDetails.textContent = levelData.detail
+    }
+
+    function renderFeedback(result) {
+      if (!result.errors.length) {
+        feedbackResult.innerHTML = `<h3 class="ok">Sin errores detectados</h3><p>La oración pasa las reglas actuales del MVP.</p>`
+        return
+      }
+
+      const errorsHtml = result.errors.map((err) => `
+        <article class="error">
+          <strong>${err.title}</strong>
+          <p><strong>Qué está mal:</strong> ${err.explanation}</p>
+          <p><strong>Por qué:</strong> ${err.why}</p>
+          <p><strong>Sugerencia:</strong> ${err.suggestion}</p>
+        </article>
+      `).join("")
+
+      feedbackResult.innerHTML = `
+        <h3>Corrección y explicación</h3>
+        <p><strong>Oración sugerida:</strong> ${result.correction}</p>
+        ${errorsHtml}
+      `
+    }
+
+    
+    
+    function renderWordDetails(wordEntry) {
+      if (!wordEntry || !wordEntry.knowledge) {
+        wordDetailResult.innerHTML = `<p class="placeholder">Sin entrada de corpus para esta palabra todavía.</p>`
+        return
+      }
+
+      const k = wordEntry.knowledge
+      wordDetailResult.innerHTML = `
+        <p><strong>Palabra:</strong> ${wordEntry.token}</p>
+        <p><strong>IPA:</strong> ${k.ipa}</p>
+        <p><strong>Qué es:</strong> ${k.wordClass}</p>
+        <p><strong>Etimología:</strong> ${k.etymology}</p>
+        <p><strong>Significado:</strong> ${k.meaning}</p>
+        <p><strong>Uso en oración:</strong> ${k.usage}</p>
+        <p><strong>Nota didáctica:</strong> ${k.notes}</p>
+      `
+    }
+
+    function selectWord(token) {
+      if (!latestResult?.morphology) return
+      selectedWordKey = token
+      const wordEntry = latestResult.morphology.find((m) => m.token === token)
+      renderWordDetails(wordEntry)
+      renderLinguisticLayers(latestResult)
+    }
+
+    window.selectWord = selectWord
+
+    function renderLinguisticLayers(result) {
+      morphologyResult.innerHTML = (result.morphology ?? []).map((m) => {
+        const active = selectedWordKey === m.token ? "style=\"font-weight:700;\"" : ""
+        return `<li><button type="button" onclick="selectWord('${m.token}')" ${active}>${m.token}</button> → lemma: ${m.lemma}, pos: ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
+      }).join("") || "<li>Sin datos morfológicos.</li>"
+
+      syntaxResult.textContent = result.syntax?.bracketed ?? "Sin árbol sintáctico."
+
+      const semantics = result.semantics
+      semanticsResult.innerHTML = semantics
+        ? `
+            <li><strong>Predicado:</strong> ${semantics.predicate ?? "N/A"}</li>
+            <li><strong>Agente:</strong> ${semantics.roles?.agent ?? "N/A"}</li>
+            <li><strong>Acción:</strong> ${semantics.roles?.action ?? "N/A"}</li>
+            <li><strong>Tema:</strong> ${semantics.roles?.theme ?? "N/A"}</li>
+            <li><strong>Polaridad:</strong> ${semantics.polarity}</li>
+            <li><strong>Modalidad:</strong> ${semantics.modality}</li>
+          `
+        : "<li>Sin datos semánticos.</li>"
+
+      const pragmatics = result.pragmatics
+      pragmaticsResult.innerHTML = pragmatics
+        ? `
+            <li><strong>Acto de habla:</strong> ${pragmatics.speechAct}</li>
+            <li><strong>Cortesía:</strong> ${pragmatics.politeness}</li>
+            <li><strong>Intención comunicativa:</strong> ${pragmatics.communicativeIntent}</li>
+          `
+        : "<li>Sin datos pragmáticos.</li>"
+    }
+
+    function renderProfile(profile) {
+      const concepts = Object.entries(profile?.concepts ?? {})
+      profileResult.innerHTML = concepts.length
+        ? concepts.map(([name, stats]) => `
+            <li><strong>${name}</strong> · intentos: ${stats.attempts} · aciertos: ${stats.correct} · fallos: ${stats.mistakes} · mastery: ${(stats.mastery * 100).toFixed(0)}%</li>
+          `).join("")
+        : "<li>Sin historial todavía.</li>"
+    }
+
+    function readExerciseAnswer(exercise) {
+      if (exercise.type === "single-choice") {
+        const checked = document.querySelector(`input[name='${exercise.id}']:checked`)
+        return checked ? checked.value : ""
+      }
+
+      if (exercise.type === "multi-select") {
+        return Array.from(document.querySelectorAll(`input[name='${exercise.id}']:checked`)).map((el) => el.value)
+      }
+
+      return document.getElementById(`answer-${exercise.id}`)?.value ?? ""
+    }
+
+    function buildExerciseFields(exercise) {
+      if (exercise.type === "single-choice") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="radio" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      if (exercise.type === "multi-select") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="checkbox" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      return `<input id="answer-${exercise.id}" type="text" placeholder="Escribe tu respuesta" />`
+    }
+
+    function submitExercise(exerciseId) {
+      const exercise = latestResult?.exercises?.find((item) => item.id === exerciseId)
+      if (!exercise) return
+
+      const userAnswer = readExerciseAnswer(exercise)
+      const evaluation = evaluateExercise(exercise, userAnswer)
+      latestProfile = evaluation.profile
+      exerciseStates[exerciseId] = {
+        isCorrect: evaluation.isCorrect,
+        feedback: evaluation.feedback,
+        expectedAnswers: evaluation.expectedAnswers
+      }
+
+      renderExercises(latestResult.exercises)
+      renderProfile(latestProfile)
+      renderHome(latestProfile)
+    }
+
+    window.submitExercise = submitExercise
+
+    function renderExercises(exercises) {
+      if (!exercises.length) {
+        exerciseResult.innerHTML = "<p>No hay ejercicios porque no se detectaron errores.</p>"
+        return
+      }
+
+      exerciseResult.innerHTML = exercises.map((exercise) => {
+        const status = exerciseStates[exercise.id]
+        const reveal = status && !status.isCorrect
+
+        return `
+          <article class="exercise" id="exercise-${exercise.id}">
+            <div><strong>${exercise.type}</strong> <span class="pill">${exercise.difficulty}</span> <span class="pill">${exercise.focus}</span></div>
+            <p>${exercise.prompt}</p>
+            <div>${buildExerciseFields(exercise)}</div>
+            <button type="button" class="primary" onclick="submitExercise('${exercise.id}')">Responder</button>
+            ${status ? `<p class="feedback">${status.feedback}</p>` : ""}
+            ${reveal ? `<p class="feedback"><strong>Respuesta esperada:</strong> ${status.expectedAnswers.join(" | ")}</p>` : ""}
+          </article>
+        `
+      }).join("")
+    }
+
+    function renderAnalyzer(result) {
+      latestResult = result
+      latestProfile = result.profile
+      exerciseStates = {}
+      selectedWordKey = null
+
+      if (!result.clause) {
+        clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
+        tokenResult.innerHTML = ""
+        renderFeedback(result)
+        renderExercises(result.exercises)
+        renderProfile(result.profile)
+        renderLinguisticLayers(result)
+        renderWordDetails(null)
+        renderHome(result.profile)
+        return
+      }
+
+      clauseResult.innerHTML = `
+        <h3>Estructura de cláusula</h3>
+        <p><strong>Subject:</strong> ${result.clause.subject ?? "N/A"}</p>
+        <p><strong>Auxiliary:</strong> ${result.clause.auxiliary ?? "N/A"}</p>
+        <p><strong>Main verb:</strong> ${result.clause.mainVerb ?? "N/A"}</p>
+        <p><strong>Aspect:</strong> ${result.clause.aspect}</p>
+        <p><strong>Function:</strong> ${result.clause.function}</p>
+      `
+
+      tokenResult.innerHTML = result.tokens.map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`).join("")
+
+      renderFeedback(result)
+      renderExercises(result.exercises)
+      renderProfile(result.profile)
+      renderLinguisticLayers(result)
+      const firstWord = result.morphology?.[0] ?? null
+      renderWordDetails(firstWord)
+      renderHome(result.profile)
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+      const result = analyze(sentenceInput.value)
+      renderAnalyzer(result)
+      switchSection("herramientas")
+    })
+
+    renderHome(latestProfile)
+  </script>
 </body>
 </html>
