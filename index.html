@@ -161,6 +161,28 @@
       cursor: pointer;
       font-weight: 600;
     }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.35rem;
+    }
+    .day-cell {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+      padding: 0.25rem;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+    }
+    .day-cell.studied {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+      font-weight: 700;
+    }
+    .chart-wrapper { overflow-x: auto; }
     ul { padding-left: 1rem; }
 
     @media (max-width: 900px) {
@@ -176,7 +198,7 @@
       <h1 class="brand">Hanari</h1>
       <ul class="menu" id="menuList">
         <li><button class="active" data-section="home">Inicio</button></li>
-        <li><button data-section="yo">Yo (usuario)</button></li>
+        <li><button data-section="yo">Yo</button></li>
         <li><button data-section="recursos">Recursos</button></li>
         <li><button data-section="herramientas">Herramientas</button></li>
         <li><button data-section="juegos">Juegos</button></li>
@@ -206,8 +228,37 @@
 
       <section id="section-yo" class="section">
         <article class="card">
-          <h2>Yo (usuario)</h2>
-          <p class="placeholder">Aquí irá perfil, streak diario, logros y progreso por concepto.</p>
+          <h2>Yo</h2>
+          <p>Panel personal para gestionar perfil, metas y progreso de aprendizaje lingüístico.</p>
+        </article>
+
+        <article class="card">
+          <h3>Perfil</h3>
+          <p><strong>Nivel actual:</strong> <span id="yoLevel">Nivel 1</span></p>
+          <p><strong>Palabras aprendidas:</strong> <span id="yoWordsLearned">0</span></p>
+        </article>
+
+        <article class="card">
+          <h3>Metas</h3>
+          <p class="placeholder">Escribe metas semanales o mensuales (se guardan en este navegador).</p>
+          <textarea id="yoGoalsInput" placeholder="Ejemplo: dominar presente perfecto esta semana y aprender 30 palabras nuevas."></textarea>
+          <button id="saveGoalsBtn" class="primary" type="button">Guardar metas</button>
+          <p id="yoGoalsStatus" class="placeholder"></p>
+        </article>
+
+        <article class="card">
+          <h3>Stats</h3>
+          <ul id="yoStatsList"></ul>
+        </article>
+
+        <article class="card">
+          <h3>Calendario de estudio (últimos 28 días)</h3>
+          <div id="yoCalendarGrid" class="calendar-grid"></div>
+        </article>
+
+        <article class="card">
+          <h3>Gráfico de progreso en el tiempo (mastery)</h3>
+          <canvas id="yoProgressChart" width="900" height="220" aria-label="Progreso de mastery en el tiempo"></canvas>
         </article>
       </section>
 
@@ -383,10 +434,184 @@
     const wordDetailResult = document.getElementById("wordDetailResult")
     const analyzeBtn = document.getElementById("analyzeBtn")
 
+    const yoLevel = document.getElementById("yoLevel")
+    const yoWordsLearned = document.getElementById("yoWordsLearned")
+    const yoGoalsInput = document.getElementById("yoGoalsInput")
+    const saveGoalsBtn = document.getElementById("saveGoalsBtn")
+    const yoGoalsStatus = document.getElementById("yoGoalsStatus")
+    const yoStatsList = document.getElementById("yoStatsList")
+    const yoCalendarGrid = document.getElementById("yoCalendarGrid")
+    const yoProgressChart = document.getElementById("yoProgressChart")
+
     let latestResult = null
     let latestProfile = getErrorProfile()
     let exerciseStates = {}
     let selectedWordKey = null
+
+    const USER_PROGRESS_KEY = "hanari-user-progress-v1"
+
+    function defaultProgressState() {
+      return {
+        wordsLearned: {},
+        grammarAnswered: 0,
+        grammarCorrect: 0,
+        studyDays: {},
+        masteryHistory: [],
+        goals: ""
+      }
+    }
+
+    function getProgressState() {
+      try {
+        const raw = window.localStorage.getItem(USER_PROGRESS_KEY)
+        if (!raw) return defaultProgressState()
+        return { ...defaultProgressState(), ...JSON.parse(raw) }
+      } catch {
+        return defaultProgressState()
+      }
+    }
+
+    function saveProgressState(state) {
+      try {
+        window.localStorage.setItem(USER_PROGRESS_KEY, JSON.stringify(state))
+      } catch {
+        // no-op fallback for restricted environments
+      }
+    }
+
+    function isoDay(date) {
+      return date.toISOString().slice(0, 10)
+    }
+
+    function markStudyDay(state, date = new Date()) {
+      const key = isoDay(date)
+      state.studyDays[key] = (state.studyDays[key] ?? 0) + 1
+    }
+
+    function updateWordsLearnedFromResult(state, result) {
+      for (const token of (result?.tokens ?? [])) {
+        const normalized = String(token.token || "").toLowerCase().trim()
+        if (!normalized || normalized.length < 2) continue
+        state.wordsLearned[normalized] = true
+      }
+    }
+
+    function appendMasterySnapshot(state, profile) {
+      const levelData = calculateGlobalLevel(profile)
+      const today = isoDay(new Date())
+      const existing = (state.masteryHistory ?? []).find((point) => point.day === today)
+      const value = Number((levelData.mastery ?? 0).toFixed(4))
+      if (existing) existing.mastery = value
+      else state.masteryHistory.push({ day: today, mastery: value })
+      state.masteryHistory = state.masteryHistory.slice(-60)
+    }
+
+    function renderYoCalendar(state) {
+      if (!yoCalendarGrid) return
+      const days = []
+      const now = new Date()
+      for (let i = 27; i >= 0; i -= 1) {
+        const d = new Date(now)
+        d.setDate(now.getDate() - i)
+        const key = isoDay(d)
+        const studied = (state.studyDays?.[key] ?? 0) > 0
+        days.push(`
+          <div class="day-cell ${studied ? "studied" : ""}" title="${key} · sesiones: ${state.studyDays?.[key] ?? 0}">
+            ${d.getDate()}
+          </div>
+        `)
+      }
+      yoCalendarGrid.innerHTML = days.join("")
+    }
+
+    function renderYoChart(state) {
+      if (!yoProgressChart) return
+      const ctx = yoProgressChart.getContext("2d")
+      if (!ctx) return
+
+      const points = (state.masteryHistory ?? []).slice(-30)
+      const width = yoProgressChart.width
+      const height = yoProgressChart.height
+      const pad = 24
+
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = "#ffffff"
+      ctx.fillRect(0, 0, width, height)
+
+      ctx.strokeStyle = "#e5e7eb"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(pad, height - pad)
+      ctx.lineTo(width - pad, height - pad)
+      ctx.moveTo(pad, pad)
+      ctx.lineTo(pad, height - pad)
+      ctx.stroke()
+
+      if (!points.length) {
+        ctx.fillStyle = "#6b7280"
+        ctx.font = "14px Arial"
+        ctx.fillText("Aún no hay histórico de progreso.", pad + 8, height / 2)
+        return
+      }
+
+      const stepX = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0
+      ctx.strokeStyle = "#2563eb"
+      ctx.lineWidth = 2
+      ctx.beginPath()
+
+      points.forEach((point, idx) => {
+        const x = pad + idx * stepX
+        const y = height - pad - (Math.max(0, Math.min(1, point.mastery ?? 0)) * (height - pad * 2))
+        if (idx === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      })
+      ctx.stroke()
+
+      ctx.fillStyle = "#3730a3"
+      points.forEach((point, idx) => {
+        const x = pad + idx * stepX
+        const y = height - pad - (Math.max(0, Math.min(1, point.mastery ?? 0)) * (height - pad * 2))
+        ctx.beginPath()
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
+
+    function renderYoSection(profile) {
+      const progress = getProgressState()
+      const levelData = calculateGlobalLevel(profile)
+      const wordsLearnedCount = Object.keys(progress.wordsLearned ?? {}).length
+      const grammarAnswered = progress.grammarAnswered ?? 0
+      const grammarCorrect = progress.grammarCorrect ?? 0
+      const accuracy = grammarAnswered ? (grammarCorrect / grammarAnswered) * 100 : 0
+
+      if (yoLevel) yoLevel.textContent = levelData.label
+      if (yoWordsLearned) yoWordsLearned.textContent = String(wordsLearnedCount)
+      if (yoGoalsInput && document.activeElement !== yoGoalsInput) yoGoalsInput.value = progress.goals ?? ""
+
+      if (yoStatsList) {
+        yoStatsList.innerHTML = `
+          <li><strong>Palabras aprendidas:</strong> ${wordsLearnedCount}</li>
+          <li><strong>Preguntas de gramática respondidas:</strong> ${grammarAnswered}</li>
+          <li><strong>Preguntas correctas:</strong> ${grammarCorrect}</li>
+          <li><strong>Precisión gramatical:</strong> ${accuracy.toFixed(0)}%</li>
+        `
+      }
+
+      renderYoCalendar(progress)
+      renderYoChart(progress)
+    }
+
+    if (saveGoalsBtn) {
+      saveGoalsBtn.addEventListener("click", () => {
+        const progress = getProgressState()
+        progress.goals = yoGoalsInput?.value?.trim() ?? ""
+        markStudyDay(progress)
+        saveProgressState(progress)
+        if (yoGoalsStatus) yoGoalsStatus.textContent = "Metas guardadas correctamente."
+        renderYoSection(latestProfile)
+      })
+    }
 
     function switchSection(sectionId) {
       sections.forEach((section) => {
@@ -424,6 +649,7 @@
       userLevel.textContent = levelData.label
       masteryPill.textContent = `Mastery global: ${(levelData.mastery * 100).toFixed(0)}%`
       levelDetails.textContent = levelData.detail
+      renderYoSection(profile)
     }
 
     function renderFeedback(result) {
@@ -550,6 +776,16 @@
       const userAnswer = readExerciseAnswer(exercise)
       const evaluation = evaluateExercise(exercise, userAnswer)
       latestProfile = evaluation.profile
+
+      const progress = getProgressState()
+      progress.grammarAnswered = (progress.grammarAnswered ?? 0) + 1
+      if (evaluation.isCorrect) {
+        progress.grammarCorrect = (progress.grammarCorrect ?? 0) + 1
+      }
+      markStudyDay(progress)
+      appendMasterySnapshot(progress, latestProfile)
+      saveProgressState(progress)
+
       exerciseStates[exerciseId] = {
         isCorrect: evaluation.isCorrect,
         feedback: evaluation.feedback,
@@ -591,6 +827,12 @@
       latestProfile = result.profile
       exerciseStates = {}
       selectedWordKey = null
+
+      const progress = getProgressState()
+      updateWordsLearnedFromResult(progress, result)
+      markStudyDay(progress)
+      appendMasterySnapshot(progress, latestProfile)
+      saveProgressState(progress)
 
       if (!result.clause) {
         clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
