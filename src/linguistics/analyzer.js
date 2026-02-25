@@ -27,6 +27,7 @@ const WH_WORDS = new Set(["what", "why", "how", "when", "where", "who", "whom", 
 
 const DETERMINERS = new Set(["a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their"])
 const COMMON_HAVE_OBJECTS = new Set(["lunch", "breakfast", "dinner", "fun", "time", "trouble", "class", "coffee", "tea", "work"])
+const FUNCTION_WORDS = new Set(["a", "an", "the", "my", "your", "his", "her", "our", "their", "to", "of", "for", "in", "on", "at", "with", "and", "or", "but"])
 
 const SUBJECT_AUX_RULES = {
   i: new Set(["am", "was", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
@@ -41,7 +42,8 @@ const SUBJECT_AUX_RULES = {
 const ERROR_TO_CONCEPT = {
   SUBJECT_AUX_AGREEMENT: "subject-auxiliary-agreement",
   MISSING_PROGRESSIVE_AUX: "progressive-aspect",
-  PERFECT_WITHOUT_PARTICIPLE: "perfect-aspect"
+  PERFECT_WITHOUT_PARTICIPLE: "perfect-aspect",
+  COPULAR_COMPLEMENT_AGREEMENT: "copular-complement-agreement"
 }
 
 function normalizeText(value) {
@@ -114,6 +116,25 @@ function findMainVerb(tokens, auxiliaryIndex, subjectIndex = -1) {
 }
 
 
+
+function isLikelyAdjective(token) {
+  const lower = token.toLowerCase()
+  return ["late", "early", "ready", "happy", "sad", "tired"].includes(lower) || /y$|ful$|ous$|ive$|al$/.test(lower)
+}
+
+function findCopularPredicateHead(tokens, auxiliaryIndex, subjectIndex) {
+  let candidate = null
+
+  for (let i = auxiliaryIndex + 1; i < tokens.length; i += 1) {
+    const lower = tokens[i].toLowerCase()
+    if (NEGATION_MARKERS.has(lower) || i === subjectIndex || FUNCTION_WORDS.has(lower)) continue
+    candidate = tokens[i]
+    if (isLikelyAdjective(tokens[i])) return tokens[i]
+  }
+
+  return candidate ?? findMainVerb(tokens, auxiliaryIndex, subjectIndex)
+}
+
 function detectClauseCore(tokens) {
   if (tokens.length === 0) {
     return { subject: null, auxiliary: null, auxiliaryIndex: -1, mainVerb: null }
@@ -138,7 +159,9 @@ function detectClauseCore(tokens) {
   const subject = tokens[0] ?? null
   const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
   const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
-  const mainVerb = findMainVerb(tokens, auxiliaryIndex, 0)
+  const mainVerb = auxiliary && BE_AUX.has(auxiliary.toLowerCase())
+    ? findCopularPredicateHead(tokens, auxiliaryIndex, 0)
+    : findMainVerb(tokens, auxiliaryIndex, 0)
 
   return { subject, auxiliary, auxiliaryIndex, mainVerb }
 }
@@ -302,6 +325,11 @@ function explainError(code, details) {
       title: "Perfecto mal formado",
       why: "El aspecto perfecto requiere HAVE/HAS/HAD + participio pasado.",
       explanation: `El auxiliar '${details.auxiliary}' debería ir con participio (ej. studied, eaten).`
+    },
+    COPULAR_COMPLEMENT_AGREEMENT: {
+      title: "Complemento nominal en cópula",
+      why: "Con sujeto singular (he/she/it) suele requerirse complemento nominal singular en oraciones identificativas.",
+      explanation: `La secuencia detectada sugiere posible discordancia en '${details.complement}'.`
     },
     EMPTY_INPUT: {
       title: "Oración vacía",
@@ -488,6 +516,20 @@ function detectErrors(sentence, clause, context = {}) {
       auxiliary: clause.auxiliary,
       suggestion: "Use a past participle after have/has/had."
     }))
+  }
+
+
+  if (lowerAux && BE_AUX.has(lowerAux) && ["he", "she", "it"].includes(lowerSubject || "")) {
+    const possessivePattern = tokens.findIndex((t) => ["my", "your", "his", "her", "our", "their"].includes(t.toLowerCase()))
+    if (possessivePattern >= 0) {
+      const complementToken = tokens[possessivePattern + 1]?.toLowerCase() ?? ""
+      if (complementToken.endsWith("s") && !complementToken.endsWith("ss")) {
+        errors.push(explainError("COPULAR_COMPLEMENT_AGREEMENT", {
+          complement: tokens[possessivePattern + 1],
+          suggestion: "Use singular noun after possessive determiner in this clause."
+        }))
+      }
+    }
   }
 
   return errors

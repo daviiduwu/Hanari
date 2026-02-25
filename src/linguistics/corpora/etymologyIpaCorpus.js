@@ -67,6 +67,23 @@ export const ETYMOLOGY_IPA_CORPUS = {
     usage: "She is studying English now.",
     notes: "Con mayúscula cuando se refiere al idioma."
   },
+
+  skosh: {
+    ipa: "/skoʊʃ/",
+    wordClass: "adverb / informal quantifier",
+    etymology: "Préstamo del japonés sukoshi (un poco), difundido en inglés coloquial del siglo XX.",
+    meaning: "Un poco, ligeramente.",
+    usage: "She is a skosh late.",
+    notes: "Registro informal; suele funcionar como modificador de grado."
+  },
+  late: {
+    ipa: "/leɪt/",
+    wordClass: "adjective / adverb",
+    etymology: "Del inglés antiguo lǣt (lento, tardío), raíz germánica.",
+    meaning: "Tardío o fuera del tiempo esperado.",
+    usage: "She is late for class.",
+    notes: "En cláusulas copulativas con BE suele funcionar como adjetivo predicativo."
+  },
   linguistics: {
     ipa: "/lɪŋˈɡwɪs.tɪks/",
     wordClass: "noun",

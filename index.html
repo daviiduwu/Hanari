@@ -359,6 +359,7 @@
         <p><strong>Significado:</strong> ${k.meaning}</p>
         <p><strong>Uso en oración:</strong> ${k.usage}</p>
         <p><strong>Nota didáctica:</strong> ${k.notes}</p>
+        <p class="placeholder"><em>Forma base (lemma)</em> = palabra canónica; <em>POS</em> = categoría gramatical.</p>
       `
     }
 
@@ -375,7 +376,7 @@
     function renderLinguisticLayers(result) {
       morphologyResult.innerHTML = (result.morphology ?? []).map((m) => {
         const active = selectedWordKey === m.token ? "style=\"font-weight:700;\"" : ""
-        return `<li><button type="button" onclick="selectWord('${m.token}')" ${active}>${m.token}</button> → lemma: ${m.lemma}, pos: ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
+        return `<li><button type="button" onclick="selectWord('${m.token}')" ${active}>${m.token}</button> → forma base (lemma): ${m.lemma}, categoría gramatical (POS): ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
       }).join("") || "<li>Sin datos morfológicos.</li>"
 
       syntaxResult.textContent = result.syntax?.bracketed ?? "Sin árbol sintáctico."
