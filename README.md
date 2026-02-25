@@ -11,8 +11,9 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
   - Incluye menú con secciones: Inicio, Yo, Recursos, Herramientas, Juegos, Comunidad, Donaciones, Opciones, Sign out.
   - La sección **Herramientas** contiene el analizador de oraciones y ejercicios adaptativos.
 - `src/linguistics/analyzer.js`
-  - Núcleo lingüístico rule-based.
-  - Analiza cláusula, detecta errores, explica por qué, genera ejercicios y evalúa respuestas.
+  - Núcleo lingüístico rule-based y multicapa.
+  - Analiza cláusula, detecta errores, genera correcciones/ejercicios y evalúa respuestas.
+  - Añade capas lingüísticas MVP: morfología, sintaxis (árbol morfosintáctico), semántica y pragmática.
 - `src/linguistics/errorProfile.js`
   - Perfil adaptativo por concepto usando `localStorage` (con fallback en memoria).
   - Acumula errores de entrada y resultados de ejercicios (`aciertos/fallos/mastery/streak`).
@@ -34,9 +35,14 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 5. Explica cada error en lenguaje pedagógico y propone corrección.
 6. Genera ejercicios por concepto con texto libre, selección única y selección múltiple.
 7. Evalúa respuestas del usuario, registra aciertos/fallos y adapta la dificultad.
+8. Entrega capas lingüísticas visibles para aprendizaje:
+   - morfología (lemma, POS y rasgos),
+   - árbol sintáctico en formato bracket,
+   - roles semánticos básicos,
+   - inferencia pragmática (acto de habla, cortesía, intención).
 
 ## Siguiente paso incremental (recomendado)
 
 1. Separar plantillas de ejercicios por concepto en `src/linguistics/exerciseTemplates.js`.
-2. Añadir historial de sesiones (tiempo por respuesta, tasa de acierto por día) para rankings.
-3. Crear módulo de comunidad/rankings desacoplado (`src/social/`) para escalar a miles de usuarios.
+2. Añadir parser de dependencias incremental (`src/linguistics/dependencyParser.js`) para enriquecer árbol y roles.
+3. Conectar pragmática con contexto conversacional (historial de turnos) para tutor IA.

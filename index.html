@@ -217,6 +217,26 @@
         </section>
 
         <section class="card">
+          <h3>Morfología</h3>
+          <ul id="morphologyResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Sintaxis (árbol morfosintáctico)</h3>
+          <pre id="syntaxResult" style="white-space: pre-wrap;"></pre>
+        </section>
+
+        <section class="card">
+          <h3>Semántica</h3>
+          <ul id="semanticsResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Pragmática</h3>
+          <ul id="pragmaticsResult"></ul>
+        </section>
+
+        <section class="card">
           <h3>Ejercicios generados</h3>
           <div id="exerciseResult"></div>
         </section>
@@ -246,6 +266,10 @@
     const tokenResult = document.getElementById("tokenResult")
     const exerciseResult = document.getElementById("exerciseResult")
     const profileResult = document.getElementById("profileResult")
+    const morphologyResult = document.getElementById("morphologyResult")
+    const syntaxResult = document.getElementById("syntaxResult")
+    const semanticsResult = document.getElementById("semanticsResult")
+    const pragmaticsResult = document.getElementById("pragmaticsResult")
     const analyzeBtn = document.getElementById("analyzeBtn")
 
     let latestResult = null
@@ -310,6 +334,36 @@
         <p><strong>Oración sugerida:</strong> ${result.correction}</p>
         ${errorsHtml}
       `
+    }
+
+    
+    function renderLinguisticLayers(result) {
+      morphologyResult.innerHTML = (result.morphology ?? []).map((m) =>
+        `<li><strong>${m.token}</strong> → lemma: ${m.lemma}, pos: ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
+      ).join("") || "<li>Sin datos morfológicos.</li>"
+
+      syntaxResult.textContent = result.syntax?.bracketed ?? "Sin árbol sintáctico."
+
+      const semantics = result.semantics
+      semanticsResult.innerHTML = semantics
+        ? `
+            <li><strong>Predicado:</strong> ${semantics.predicate ?? "N/A"}</li>
+            <li><strong>Agente:</strong> ${semantics.roles?.agent ?? "N/A"}</li>
+            <li><strong>Acción:</strong> ${semantics.roles?.action ?? "N/A"}</li>
+            <li><strong>Tema:</strong> ${semantics.roles?.theme ?? "N/A"}</li>
+            <li><strong>Polaridad:</strong> ${semantics.polarity}</li>
+            <li><strong>Modalidad:</strong> ${semantics.modality}</li>
+          `
+        : "<li>Sin datos semánticos.</li>"
+
+      const pragmatics = result.pragmatics
+      pragmaticsResult.innerHTML = pragmatics
+        ? `
+            <li><strong>Acto de habla:</strong> ${pragmatics.speechAct}</li>
+            <li><strong>Cortesía:</strong> ${pragmatics.politeness}</li>
+            <li><strong>Intención comunicativa:</strong> ${pragmatics.communicativeIntent}</li>
+          `
+        : "<li>Sin datos pragmáticos.</li>"
     }
 
     function renderProfile(profile) {
@@ -400,6 +454,7 @@
         renderFeedback(result)
         renderExercises(result.exercises)
         renderProfile(result.profile)
+        renderLinguisticLayers(result)
         renderHome(result.profile)
         return
       }
@@ -418,6 +473,7 @@
       renderFeedback(result)
       renderExercises(result.exercises)
       renderProfile(result.profile)
+      renderLinguisticLayers(result)
       renderHome(result.profile)
     }
 

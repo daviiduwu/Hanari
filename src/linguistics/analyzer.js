@@ -22,6 +22,7 @@ const DO_AUX = new Set(["do", "does", "did"])
 const MODAL_AUX = new Set(["will", "would", "shall", "should", "can", "could", "may", "might", "must"])
 const PRONOUN_SUBJECTS = new Set(["i", "you", "he", "she", "it", "we", "they"])
 const NEGATION_MARKERS = new Set(["not", "n't"])
+const WH_WORDS = new Set(["what", "why", "how", "when", "where", "who", "whom", "whose", "which"])
 
 const SUBJECT_AUX_RULES = {
   i: new Set(["am", "was", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
@@ -88,24 +89,54 @@ function suggestAuxiliary(subject, observedAux) {
   return getBeAuxForSubject(subject)
 }
 
-function findMainVerb(tokens, auxiliaryIndex) {
+function findMainVerb(tokens, auxiliaryIndex, subjectIndex = -1) {
   const start = auxiliaryIndex >= 0 ? auxiliaryIndex + 1 : 1
 
   for (let i = start; i < tokens.length; i += 1) {
     const lower = tokens[i].toLowerCase()
     if (NEGATION_MARKERS.has(lower)) continue
-    if (!AUXILIARIES.has(lower)) return tokens[i]
+    if (i !== subjectIndex && !AUXILIARIES.has(lower)) return tokens[i]
   }
 
   if (auxiliaryIndex >= 0) {
     for (let i = 1; i < tokens.length; i += 1) {
       const lower = tokens[i].toLowerCase()
       if (NEGATION_MARKERS.has(lower)) continue
-      if (i !== auxiliaryIndex && !AUXILIARIES.has(lower)) return tokens[i]
+      if (i !== auxiliaryIndex && i !== subjectIndex && !AUXILIARIES.has(lower)) return tokens[i]
     }
   }
 
   return tokens[1] ?? null
+}
+
+
+function detectClauseCore(tokens) {
+  if (tokens.length === 0) {
+    return { subject: null, auxiliary: null, auxiliaryIndex: -1, mainVerb: null }
+  }
+
+  const first = tokens[0].toLowerCase()
+  const second = tokens[1]?.toLowerCase()
+
+  // Question inversion: "Will you ...", "Can she ..."
+  if (MODAL_AUX.has(first) && PRONOUN_SUBJECTS.has(second)) {
+    const auxiliaryIndex = 0
+    const subject = tokens[1]
+    const mainVerb = findMainVerb(tokens, auxiliaryIndex, 1)
+    return { subject, auxiliary: tokens[0], auxiliaryIndex, mainVerb }
+  }
+
+  // Imperative with politeness marker: "Please close..."
+  if (first === "please") {
+    return { subject: "(you)", auxiliary: null, auxiliaryIndex: -1, mainVerb: tokens[1] ?? null }
+  }
+
+  const subject = tokens[0] ?? null
+  const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
+  const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
+  const mainVerb = findMainVerb(tokens, auxiliaryIndex, 0)
+
+  return { subject, auxiliary, auxiliaryIndex, mainVerb }
 }
 
 function inferAspect(auxiliary, mainVerb) {
@@ -136,6 +167,116 @@ function inferTags(token) {
   if (lower.endsWith("s")) return ["possible-3rd-person-singular-or-plural"]
 
   return ["lexical-token"]
+}
+
+function inferPos(token, tags = []) {
+  const lower = token.toLowerCase()
+  if (tags.includes("subject-pronoun")) return "PRON"
+  if (tags.includes("auxiliary")) return "AUX"
+  if (tags.includes("adverb")) return "ADV"
+  if (tags.includes("verb")) return "VERB"
+  if (WH_WORDS.has(lower)) return "WH"
+  if (["a", "an", "the"].includes(lower)) return "DET"
+  if (["and", "or", "but"].includes(lower)) return "CONJ"
+  if (["to", "for", "with", "in", "on", "at", "from", "of"].includes(lower)) return "PREP"
+  return "NOUN/LEX"
+}
+
+function analyzeMorphology(tokens) {
+  return tokens.map((token) => {
+    const tags = inferTags(token)
+    const lower = token.toLowerCase()
+    const lemma = lower.endsWith("ing")
+      ? lower.replace(/ing$/, "")
+      : lower.endsWith("ed")
+        ? lower.replace(/ed$/, "")
+        : lower
+
+    const features = []
+    if (PRONOUN_SUBJECTS.has(lower)) features.push("pronoun")
+    if (BE_AUX.has(lower) || HAVE_AUX.has(lower) || DO_AUX.has(lower) || MODAL_AUX.has(lower)) features.push("auxiliary")
+    if (lower.endsWith("ing")) features.push("progressive-form")
+    if (/ed$|en$/.test(lower)) features.push("participle-or-past")
+    if (lower.endsWith("s") && lower.length > 2) features.push("-s-suffix")
+
+    return {
+      token,
+      lemma,
+      pos: inferPos(token, tags),
+      features
+    }
+  })
+}
+
+function buildSyntaxTree(clause, tokens) {
+  const predicateChunk = tokens.slice(1).join(" ")
+  const obj = tokens.slice(3).join(" ")
+
+  return {
+    label: "S",
+    children: [
+      { label: "NP-SUBJ", value: clause.subject ?? "∅" },
+      {
+        label: "VP",
+        children: [
+          { label: "AUX", value: clause.auxiliary ?? "∅" },
+          { label: "V", value: clause.mainVerb ?? "∅" },
+          { label: "XP", value: obj || predicateChunk || "∅" }
+        ]
+      }
+    ]
+  }
+}
+
+function formatTreeBracket(tree) {
+  const render = (node) => {
+    if (node.value !== undefined) return `[${node.label} ${node.value}]`
+    return `[${node.label} ${(node.children ?? []).map(render).join(" ")}]`
+  }
+
+  return render(tree)
+}
+
+function analyzeSemantics(clause, tokens) {
+  const lowerTokens = tokens.map((t) => t.toLowerCase())
+  const hasNegation = lowerTokens.some((t) => NEGATION_MARKERS.has(t))
+
+  return {
+    predicate: clause.mainVerb,
+    roles: {
+      agent: clause.subject,
+      action: clause.mainVerb,
+      theme: tokens.slice(2).join(" ") || null
+    },
+    polarity: hasNegation ? "negative" : "positive",
+    modality: MODAL_AUX.has((clause.auxiliary ?? "").toLowerCase()) ? clause.auxiliary.toLowerCase() : "none"
+  }
+}
+
+function analyzePragmatics(sentence, clause, tokens) {
+  const trimmed = sentence.trim()
+  const lowerTokens = tokens.map((t) => t.toLowerCase())
+  const first = lowerTokens[0] ?? ""
+  const hasPlease = lowerTokens.includes("please")
+
+  let speechAct = "statement"
+  if (trimmed.endsWith("?")) speechAct = "question"
+  if (first && WH_WORDS.has(first)) speechAct = "wh-question"
+  if (first === "please" && clause.mainVerb) speechAct = "imperative"
+  if (!trimmed.endsWith("?") && clause.mainVerb && first === clause.mainVerb.toLowerCase()) speechAct = "imperative"
+
+  const politeness = hasPlease ? "polite" : "neutral"
+  const communicativeIntent = speechAct === "question" || speechAct === "wh-question"
+    ? "request-information"
+    : speechAct === "imperative"
+      ? "request-action"
+      : "inform"
+
+  return {
+    speechAct,
+    politeness,
+    communicativeIntent
+  }
 }
 
 function explainError(code, details) {
@@ -354,6 +495,10 @@ export function analyze(sentence) {
       sentence,
       clause: null,
       tokens: [],
+      morphology: [],
+      syntax: null,
+      semantics: null,
+      pragmatics: null,
       errors,
       correction: "",
       exercises: [],
@@ -361,10 +506,7 @@ export function analyze(sentence) {
     }
   }
 
-  const subject = tokens[0] ?? null
-  const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
-  const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
-  const mainVerb = findMainVerb(tokens, auxiliaryIndex)
+  const { subject, auxiliary, auxiliaryIndex, mainVerb } = detectClauseCore(tokens)
 
   const aspect = inferAspect(auxiliary, mainVerb)
   const clause = {
@@ -383,6 +525,9 @@ export function analyze(sentence) {
     profile = recordConceptErrors(concepts)
   }
 
+  const morphology = analyzeMorphology(tokens)
+  const syntaxTree = buildSyntaxTree(clause, tokens)
+
   return {
     sentence,
     clause,
@@ -391,6 +536,13 @@ export function analyze(sentence) {
       token,
       tags: inferTags(token)
     })),
+    morphology,
+    syntax: {
+      tree: syntaxTree,
+      bracketed: formatTreeBracket(syntaxTree)
+    },
+    semantics: analyzeSemantics(clause, tokens),
+    pragmatics: analyzePragmatics(sentence, clause, tokens),
     errors,
     correction: buildCorrection(sentence, errors, clause),
     exercises: generateExercises(errors, clause, profile),
