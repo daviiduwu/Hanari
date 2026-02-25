@@ -18,16 +18,19 @@ const AUXILIARIES = new Set([
 
 const BE_AUX = new Set(["am", "is", "are", "was", "were"])
 const HAVE_AUX = new Set(["have", "has", "had"])
+const DO_AUX = new Set(["do", "does", "did"])
+const MODAL_AUX = new Set(["will", "would", "shall", "should", "can", "could", "may", "might", "must"])
 const PRONOUN_SUBJECTS = new Set(["i", "you", "he", "she", "it", "we", "they"])
+const NEGATION_MARKERS = new Set(["not", "n't"])
 
 const SUBJECT_AUX_RULES = {
-  i: new Set(["am", "was", "have", "had", "do"]),
-  you: new Set(["are", "were", "have", "had", "do"]),
-  he: new Set(["is", "was", "has", "had", "does"]),
-  she: new Set(["is", "was", "has", "had", "does"]),
-  it: new Set(["is", "was", "has", "had", "does"]),
-  we: new Set(["are", "were", "have", "had", "do"]),
-  they: new Set(["are", "were", "have", "had", "do"])
+  i: new Set(["am", "was", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  you: new Set(["are", "were", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  he: new Set(["is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  she: new Set(["is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  it: new Set(["is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  we: new Set(["are", "were", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
+  they: new Set(["are", "were", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"])
 }
 
 const ERROR_TO_CONCEPT = {
@@ -51,6 +54,58 @@ function tokenize(text) {
     .split(" ")
     .map((raw) => raw.replace(/^[^a-zA-Z']+|[^a-zA-Z']+$/g, ""))
     .filter(Boolean)
+}
+
+function getBeAuxForSubject(subject) {
+  const s = subject?.toLowerCase()
+  if (s === "i") return "am"
+  if (["he", "she", "it"].includes(s)) return "is"
+  return "are"
+}
+
+function getHaveAuxForSubject(subject, observedAux) {
+  const s = subject?.toLowerCase()
+  if (observedAux === "had") return "had"
+  if (["he", "she", "it"].includes(s)) return "has"
+  return "have"
+}
+
+function getDoAuxForSubject(subject, observedAux) {
+  const s = subject?.toLowerCase()
+  if (observedAux === "did") return "did"
+  if (["he", "she", "it"].includes(s)) return "does"
+  return "do"
+}
+
+function suggestAuxiliary(subject, observedAux) {
+  const aux = observedAux?.toLowerCase()
+
+  if (HAVE_AUX.has(aux)) return getHaveAuxForSubject(subject, aux)
+  if (DO_AUX.has(aux)) return getDoAuxForSubject(subject, aux)
+  if (BE_AUX.has(aux)) return getBeAuxForSubject(subject)
+  if (MODAL_AUX.has(aux)) return aux
+
+  return getBeAuxForSubject(subject)
+}
+
+function findMainVerb(tokens, auxiliaryIndex) {
+  const start = auxiliaryIndex >= 0 ? auxiliaryIndex + 1 : 1
+
+  for (let i = start; i < tokens.length; i += 1) {
+    const lower = tokens[i].toLowerCase()
+    if (NEGATION_MARKERS.has(lower)) continue
+    if (!AUXILIARIES.has(lower)) return tokens[i]
+  }
+
+  if (auxiliaryIndex >= 0) {
+    for (let i = 1; i < tokens.length; i += 1) {
+      const lower = tokens[i].toLowerCase()
+      if (NEGATION_MARKERS.has(lower)) continue
+      if (i !== auxiliaryIndex && !AUXILIARIES.has(lower)) return tokens[i]
+    }
+  }
+
+  return tokens[1] ?? null
 }
 
 function inferAspect(auxiliary, mainVerb) {
@@ -87,7 +142,7 @@ function explainError(code, details) {
   const byCode = {
     SUBJECT_AUX_AGREEMENT: {
       title: "Concordancia sujeto-auxiliar",
-      why: "El auxiliar debe concordar con la persona y número del sujeto.",
+      why: "El auxiliar debe concordar con la persona y número del sujeto y con la familia verbal correcta (BE/HAVE/DO/modal).",
       explanation: `El sujeto '${details.subject}' no concuerda con el auxiliar '${details.auxiliary}'.`
     },
     MISSING_PROGRESSIVE_AUX: {
@@ -128,10 +183,7 @@ function buildCorrection(sentence, errors, clause) {
     }
 
     if (err.code === "MISSING_PROGRESSIVE_AUX" && clause.subject && clause.mainVerb) {
-      const lowerSubject = clause.subject.toLowerCase()
-      const suggestedAux = ["he", "she", "it", "i"].includes(lowerSubject)
-        ? (lowerSubject === "i" ? "am" : "is")
-        : "are"
+      const suggestedAux = getBeAuxForSubject(clause.subject)
       corrected = corrected.replace(
         new RegExp(`\\b${clause.subject}\\s+${clause.mainVerb}\\b`, "i"),
         `${clause.subject} ${suggestedAux} ${clause.mainVerb}`
@@ -174,9 +226,7 @@ function buildExerciseForDifficulty(error, clause, difficulty, index) {
   }
 
   if (error.code === "MISSING_PROGRESSIVE_AUX") {
-    const aux = ["he", "she", "it", "i"].includes(clause.subject.toLowerCase())
-      ? (clause.subject.toLowerCase() === "i" ? "am" : "is")
-      : "are"
+    const aux = getBeAuxForSubject(clause.subject)
 
     return {
       id: `ex-${index + 1}`,
@@ -238,7 +288,7 @@ function detectErrors(sentence, clause) {
   const lowerMainVerb = clause.mainVerb?.toLowerCase()
 
   if (lowerSubject && lowerAux && SUBJECT_AUX_RULES[lowerSubject] && !SUBJECT_AUX_RULES[lowerSubject].has(lowerAux)) {
-    const suggestion = ["he", "she", "it"].includes(lowerSubject) ? "is" : lowerSubject === "i" ? "am" : "are"
+    const suggestion = suggestAuxiliary(lowerSubject, lowerAux)
     errors.push(explainError("SUBJECT_AUX_AGREEMENT", {
       subject: clause.subject,
       auxiliary: clause.auxiliary,
@@ -247,7 +297,7 @@ function detectErrors(sentence, clause) {
   }
 
   if (!lowerAux && lowerMainVerb?.endsWith("ing") && lowerSubject) {
-    const aux = ["he", "she", "it"].includes(lowerSubject) ? "is" : lowerSubject === "i" ? "am" : "are"
+    const aux = getBeAuxForSubject(lowerSubject)
     errors.push(explainError("MISSING_PROGRESSIVE_AUX", {
       mainVerb: clause.mainVerb,
       suggestion: `${aux} ${clause.mainVerb}`
@@ -302,12 +352,9 @@ export function analyze(sentence) {
   }
 
   const subject = tokens[0] ?? null
-  const auxiliary = tokens.find((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase())) ?? null
-  const mainVerb = tokens.find((t, idx) => {
-    if (idx === 0) return false
-    if (auxiliary && t === auxiliary) return false
-    return /ing$|ed$|en$|s$/.test(t.toLowerCase())
-  }) ?? tokens[1] ?? null
+  const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
+  const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
+  const mainVerb = findMainVerb(tokens, auxiliaryIndex)
 
   const aspect = inferAspect(auxiliary, mainVerb)
   const clause = {
