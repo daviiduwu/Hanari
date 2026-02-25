@@ -161,20 +161,66 @@
       cursor: pointer;
       font-weight: 600;
     }
+    .calendar-toolbar {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+    .calendar-year-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .calendar-year-nav button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    .calendar-meta {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
     .calendar-grid {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.7rem;
+    }
+    .month-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.5rem;
+      background: #fff;
+    }
+    .month-title {
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      font-size: 0.92rem;
+    }
+    .month-weekdays,
+    .month-days {
+      display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 0.35rem;
+      gap: 0.2rem;
+    }
+    .month-weekdays span {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
     }
     .day-cell {
       border: 1px solid var(--border);
-      border-radius: 8px;
-      min-height: 44px;
-      padding: 0.25rem;
-      font-size: 0.75rem;
+      border-radius: 6px;
+      min-height: 30px;
+      padding: 0.15rem;
+      font-size: 0.72rem;
       display: flex;
       align-items: flex-end;
-      justify-content: flex-start;
+      justify-content: flex-end;
     }
     .day-cell.studied {
       background: #dcfce7;
@@ -182,6 +228,22 @@
       color: #166534;
       font-weight: 700;
     }
+    .day-cell.today {
+      border-color: #2563eb;
+      box-shadow: inset 0 0 0 1px #2563eb;
+    }
+    .day-cell.empty {
+      border-color: transparent;
+      background: transparent;
+    }
+    .calendar-theme {
+      transition: background-color 0.2s ease;
+    }
+    .calendar-theme.weather-sunny { background: #fffbe6; }
+    .calendar-theme.weather-rainy { background: #eef6ff; }
+    .calendar-theme.weather-cloudy { background: #f3f4f6; }
+    .calendar-theme.weather-snowy { background: #f8fbff; }
+    .calendar-theme.weather-storm { background: #f3f0ff; }
     .chart-wrapper { overflow-x: auto; }
     ul { padding-left: 1rem; }
 
@@ -251,8 +313,16 @@
           <ul id="yoStatsList"></ul>
         </article>
 
-        <article class="card">
-          <h3>Calendario de estudio (últimos 28 días)</h3>
+        <article class="card calendar-theme" id="yoCalendarPanel">
+          <h3>Calendario de estudio (anual, por meses)</h3>
+          <div class="calendar-toolbar">
+            <div class="calendar-year-nav">
+              <button id="yoPrevYearBtn" type="button" aria-label="Año anterior">◀</button>
+              <strong id="yoCalendarYearLabel"></strong>
+              <button id="yoNextYearBtn" type="button" aria-label="Año siguiente">▶</button>
+            </div>
+            <div id="yoDateWeather" class="calendar-meta"></div>
+          </div>
           <div id="yoCalendarGrid" class="calendar-grid"></div>
         </article>
 
@@ -440,7 +510,12 @@
     const saveGoalsBtn = document.getElementById("saveGoalsBtn")
     const yoGoalsStatus = document.getElementById("yoGoalsStatus")
     const yoStatsList = document.getElementById("yoStatsList")
+    const yoCalendarPanel = document.getElementById("yoCalendarPanel")
     const yoCalendarGrid = document.getElementById("yoCalendarGrid")
+    const yoCalendarYearLabel = document.getElementById("yoCalendarYearLabel")
+    const yoDateWeather = document.getElementById("yoDateWeather")
+    const yoPrevYearBtn = document.getElementById("yoPrevYearBtn")
+    const yoNextYearBtn = document.getElementById("yoNextYearBtn")
     const yoProgressChart = document.getElementById("yoProgressChart")
 
     let latestResult = null
@@ -449,6 +524,17 @@
     let selectedWordKey = null
 
     const USER_PROGRESS_KEY = "hanari-user-progress-v1"
+    const MONTH_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    const WEEKDAY_SHORT = ["L", "M", "X", "J", "V", "S", "D"]
+
+    let yoCalendarYear = new Date().getFullYear()
+    let weatherCache = {
+      theme: "weather-cloudy",
+      label: "Clima no disponible",
+      emoji: "⛅",
+      fetchedAt: 0,
+      inFlight: null
+    }
 
     function defaultProgressState() {
       return {
@@ -506,22 +592,124 @@
       state.masteryHistory = state.masteryHistory.slice(-60)
     }
 
+    function getWeatherTypeFromCode(code) {
+      if ([0, 1].includes(code)) return { theme: "weather-sunny", label: "Soleado", emoji: "☀️" }
+      if ([2, 3, 45, 48].includes(code)) return { theme: "weather-cloudy", label: "Nublado", emoji: "☁️" }
+      if ([71, 73, 75, 77, 85, 86].includes(code)) return { theme: "weather-snowy", label: "Nevando", emoji: "❄️" }
+      if ([95, 96, 99].includes(code)) return { theme: "weather-storm", label: "Tormenta", emoji: "⛈️" }
+      if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { theme: "weather-rainy", label: "Lluvia", emoji: "🌧️" }
+      return { theme: "weather-cloudy", label: "Variable", emoji: "⛅" }
+    }
+
+    function fallbackWeatherByMonth(monthIndex) {
+      if ([11, 0, 1].includes(monthIndex)) return { theme: "weather-cloudy", label: "Invierno", emoji: "⛅" }
+      if ([2, 3, 4].includes(monthIndex)) return { theme: "weather-rainy", label: "Primavera", emoji: "🌦️" }
+      if ([5, 6, 7].includes(monthIndex)) return { theme: "weather-sunny", label: "Verano", emoji: "☀️" }
+      return { theme: "weather-cloudy", label: "Otoño", emoji: "🍂" }
+    }
+
+    async function fetchCurrentWeather() {
+      const now = Date.now()
+      if (weatherCache.fetchedAt && now - weatherCache.fetchedAt < 30 * 60 * 1000) return weatherCache
+      if (weatherCache.inFlight) return weatherCache.inFlight
+
+      weatherCache.inFlight = (async () => {
+        try {
+          const getPosition = () => new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null)
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve(pos.coords),
+              () => resolve(null),
+              { enableHighAccuracy: false, timeout: 2000, maximumAge: 60 * 60 * 1000 }
+            )
+          })
+
+          const coords = await getPosition()
+          const latitude = coords?.latitude ?? 40.4168
+          const longitude = coords?.longitude ?? -3.7038
+
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=weather_code&timezone=auto`
+          const response = await fetch(url)
+          if (!response.ok) throw new Error("weather fetch failed")
+
+          const data = await response.json()
+          const weatherCode = data?.current?.weather_code
+          const weather = getWeatherTypeFromCode(weatherCode)
+          weatherCache = {
+            ...weather,
+            fetchedAt: Date.now(),
+            inFlight: null
+          }
+          return weatherCache
+        } catch {
+          const fallback = fallbackWeatherByMonth(new Date().getMonth())
+          weatherCache = {
+            ...fallback,
+            fetchedAt: Date.now(),
+            inFlight: null
+          }
+          return weatherCache
+        }
+      })()
+
+      return weatherCache.inFlight
+    }
+
+    function renderYoCalendarHeader() {
+      if (!yoCalendarYearLabel || !yoDateWeather) return
+      const now = new Date()
+      const dateLabel = now.toLocaleDateString("es-ES", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      })
+      yoCalendarYearLabel.textContent = String(yoCalendarYear)
+      yoDateWeather.textContent = `${dateLabel} · ${weatherCache.emoji} ${weatherCache.label}`
+      if (yoCalendarPanel) {
+        yoCalendarPanel.classList.remove("weather-sunny", "weather-rainy", "weather-cloudy", "weather-snowy", "weather-storm")
+        yoCalendarPanel.classList.add(weatherCache.theme)
+      }
+    }
+
     function renderYoCalendar(state) {
       if (!yoCalendarGrid) return
-      const days = []
-      const now = new Date()
-      for (let i = 27; i >= 0; i -= 1) {
-        const d = new Date(now)
-        d.setDate(now.getDate() - i)
-        const key = isoDay(d)
-        const studied = (state.studyDays?.[key] ?? 0) > 0
-        days.push(`
-          <div class="day-cell ${studied ? "studied" : ""}" title="${key} · sesiones: ${state.studyDays?.[key] ?? 0}">
-            ${d.getDate()}
-          </div>
-        `)
-      }
-      yoCalendarGrid.innerHTML = days.join("")
+
+      const today = new Date()
+      const todayIso = isoDay(today)
+      const monthsHtml = MONTH_LABELS.map((monthLabel, monthIndex) => {
+        const first = new Date(yoCalendarYear, monthIndex, 1)
+        const daysInMonth = new Date(yoCalendarYear, monthIndex + 1, 0).getDate()
+        const startOffset = (first.getDay() + 6) % 7
+
+        const dayCells = []
+        for (let i = 0; i < startOffset; i += 1) {
+          dayCells.push('<div class="day-cell empty"></div>')
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+          const date = new Date(yoCalendarYear, monthIndex, day)
+          const key = isoDay(date)
+          const studied = (state.studyDays?.[key] ?? 0) > 0
+          const isToday = key === todayIso
+          dayCells.push(`
+            <div class="day-cell ${studied ? "studied" : ""} ${isToday ? "today" : ""}" title="${key} · sesiones: ${state.studyDays?.[key] ?? 0}">
+              ${day}
+            </div>
+          `)
+        }
+
+        return `
+          <article class="month-card">
+            <div class="month-title">${monthLabel}</div>
+            <div class="month-weekdays">${WEEKDAY_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+            <div class="month-days">${dayCells.join("")}</div>
+          </article>
+        `
+      }).join("")
+
+      yoCalendarGrid.innerHTML = monthsHtml
+      renderYoCalendarHeader()
     }
 
     function renderYoChart(state) {
@@ -600,6 +788,21 @@
 
       renderYoCalendar(progress)
       renderYoChart(progress)
+      fetchCurrentWeather().then(() => renderYoCalendarHeader())
+    }
+
+    if (yoPrevYearBtn) {
+      yoPrevYearBtn.addEventListener("click", () => {
+        yoCalendarYear -= 1
+        renderYoSection(latestProfile)
+      })
+    }
+
+    if (yoNextYearBtn) {
+      yoNextYearBtn.addEventListener("click", () => {
+        yoCalendarYear += 1
+        renderYoSection(latestProfile)
+      })
     }
 
     if (saveGoalsBtn) {
