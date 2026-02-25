@@ -1,53 +1,1329 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Hanari</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanari · English Linguistics Trainer</title>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --border: #e5e7eb;
+      --success: #1f8b4c;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 1rem;
+    }
+
+    .brand {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #e2e8f0;
+      background: transparent;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .menu button.active,
+    .menu button:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .content {
+      padding: 1rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero h2 { margin-top: 0; }
+
+    .level {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .placeholder { color: var(--muted); }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+    }
+
+    button.primary {
+      margin-top: 0.7rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 0.95rem;
+      cursor: pointer;
+    }
+
+    .error {
+      border-left: 4px solid var(--danger);
+      padding-left: 0.7rem;
+      margin: 0.7rem 0;
+    }
+
+    .ok { color: var(--success); }
+    .exercise { border-top: 1px dashed var(--border); padding-top: 0.75rem; margin-top: 0.75rem; }
+    .feedback { margin-top: 0.45rem; font-size: 0.95rem; }
+    .lesson-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .lesson-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: #f8fafc;
+    }
+    .lesson-card h4 { margin: 0 0 0.4rem; }
+    details.lesson-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.6rem;
+      background: #fff;
+    }
+    details.lesson-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .calendar-toolbar {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+    .calendar-year-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .calendar-year-nav button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    .calendar-meta {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.7rem;
+    }
+    .month-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.5rem;
+      background: #fff;
+    }
+    .month-title {
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      font-size: 0.92rem;
+    }
+    .month-weekdays,
+    .month-days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.2rem;
+    }
+    .month-weekdays span {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .day-cell {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-height: 30px;
+      padding: 0.15rem;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+    .day-cell.studied {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+      font-weight: 700;
+    }
+    .day-cell.today {
+      border-color: #2563eb;
+      box-shadow: inset 0 0 0 1px #2563eb;
+    }
+    .day-cell.empty {
+      border-color: transparent;
+      background: transparent;
+    }
+    .calendar-theme {
+      transition: background-color 0.2s ease;
+    }
+    .calendar-theme.weather-sunny { background: #fffbe6; }
+    .calendar-theme.weather-rainy { background: #eef6ff; }
+    .calendar-theme.weather-cloudy { background: #f3f4f6; }
+    .calendar-theme.weather-snowy { background: #f8fbff; }
+    .calendar-theme.weather-storm { background: #f3f0ff; }
+    .chart-wrapper { overflow-x: auto; }
+
+    .flashcard-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem;
+      margin-top: 0.75rem;
+      background: #fafafa;
+    }
+    .flashcard-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .flashcard-term { font-size: 1.4rem; margin: 0; }
+    .flashcard-meta { color: var(--muted); margin: 0.2rem 0 0; }
+    .flashcard-answer {
+      border-top: 1px dashed var(--border);
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+    }
+    .flashcard-actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+    }
+    .flashcard-actions button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    .repo-list li { margin-bottom: 0.4rem; }
+    ul { padding-left: 1rem; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 10; }
+      .menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
 </head>
 <body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1 class="brand">Hanari</h1>
+      <ul class="menu" id="menuList">
+        <li><button class="active" data-section="home">Inicio</button></li>
+        <li><button data-section="yo">Yo</button></li>
+        <li><button data-section="recursos">Recursos</button></li>
+        <li><button data-section="herramientas">Herramientas</button></li>
+        <li><button data-section="juegos">Juegos</button></li>
+        <li><button data-section="comunidad">Comunidad</button></li>
+        <li><button data-section="donaciones">Donaciones</button></li>
+        <li><button data-section="opciones">Opciones</button></li>
+        <li><button data-section="signout">Sign out</button></li>
+      </ul>
+    </aside>
 
-<h1>English Linguistics Trainer</h1>
+    <main class="content">
+      <section id="section-home" class="section active">
+        <article class="card hero">
+          <h2>Página principal</h2>
+          <p>Aprende inglés como sistema lingüístico: estructura, auxiliares, aspecto verbal y concordancia.</p>
+          <div class="level">
+            <div>
+              <strong>Nivel actual:</strong> <span id="userLevel">Nivel 1 · Inicio</span>
+              <p id="levelDetails" class="placeholder">Aún no hay suficientes intentos para calcular progresión fina.</p>
+            </div>
+            <div>
+              <span class="pill" id="masteryPill">Mastery global: 0%</span>
+            </div>
+          </div>
+        </article>
+      </section>
 
-<p>Escribe una oración en inglés para analizarla:</p>
+      <section id="section-yo" class="section">
+        <article class="card">
+          <h2>Yo</h2>
+          <p>Panel personal para gestionar perfil, metas y progreso de aprendizaje lingüístico.</p>
+        </article>
 
-<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+        <article class="card">
+          <h3>Perfil</h3>
+          <p><strong>Nivel actual:</strong> <span id="yoLevel">Nivel 1</span></p>
+          <p><strong>Palabras aprendidas:</strong> <span id="yoWordsLearned">0</span></p>
+        </article>
 
-<button onclick="analyzeSentence()">Analizar oración</button>
+        <article class="card">
+          <h3>Metas</h3>
+          <p class="placeholder">Escribe metas semanales o mensuales (se guardan en este navegador).</p>
+          <textarea id="yoGoalsInput" placeholder="Ejemplo: dominar presente perfecto esta semana y aprender 30 palabras nuevas."></textarea>
+          <button id="saveGoalsBtn" class="primary" type="button">Guardar metas</button>
+          <p id="yoGoalsStatus" class="placeholder"></p>
+        </article>
 
-<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
+        <article class="card">
+          <h3>Stats</h3>
+          <ul id="yoStatsList"></ul>
+        </article>
 
-<script>
-function analyzeSentence() {
-  const sentence = document.getElementById("sentenceInput").value;
+        <article class="card calendar-theme" id="yoCalendarPanel">
+          <h3>Calendario de estudio (anual, por meses)</h3>
+          <div class="calendar-toolbar">
+            <div class="calendar-year-nav">
+              <button id="yoPrevYearBtn" type="button" aria-label="Año anterior">◀</button>
+              <strong id="yoCalendarYearLabel"></strong>
+              <button id="yoNextYearBtn" type="button" aria-label="Año siguiente">▶</button>
+            </div>
+            <div id="yoDateWeather" class="calendar-meta"></div>
+          </div>
+          <div id="yoCalendarGrid" class="calendar-grid"></div>
+        </article>
 
-  // Inicializamos variables
-  let subject = "No identificado";
-  let auxiliary = "No identificado";
-  let mainVerb = "No identificado";
-  let aspect = "No identificado";
-  let func = "No identificado";
+        <article class="card">
+          <h3>Gráfico de progreso en el tiempo (mastery)</h3>
+          <canvas id="yoProgressChart" width="900" height="220" aria-label="Progreso de mastery en el tiempo"></canvas>
+        </article>
+      </section>
 
-  // Patrón muy básico para oraciones como "She is studying English"
-  const words = sentence.split(" ");
+      <section id="section-recursos" class="section">
+        <article class="card">
+          <h2>Recursos</h2>
+          <p class="placeholder">Zona para transcripciones, lecturas y recursos lingüísticos curados.</p>
+        </article>
 
-  if(words.length >= 3) {
-    subject = words[0];
-    auxiliary = words[1];
-    mainVerb = words[2];
-    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
-    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
-  }
+        <article class="card">
+          <h3>Lecciones de inglés</h3>
+          <p>Ruta base para estudiar inglés como sistema lingüístico, desde fundamentos (A1) hasta precisión avanzada (C2).</p>
 
-  // Mostrar resultado
-  document.getElementById("analysis").innerHTML = `
-    <strong>Oración analizada:</strong> ${sentence}<br>
-    Subject: ${subject}<br>
-    Auxiliary verb: ${auxiliary}<br>
-    Main verb: ${mainVerb}<br>
-    Aspect: ${aspect}<br>
-    Function: ${func}
-  `;
-}
-</script>
+          <div class="lesson-grid">
+            <article class="lesson-card">
+              <h4>¿Qué es el IPA?</h4>
+              <p>El Alfabeto Fonético Internacional (IPA) representa sonidos reales, no ortografía. Ejemplo: <strong>thought</strong> /θɔːt/.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Categorías gramaticales</h4>
+              <p>NOUN, VERB, ADJ, ADV, PRON, DET, PREP, CONJ, AUX: cada categoría cumple una función en la estructura profunda.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Morfología</h4>
+              <p>Estudia cómo se forman palabras (raíces, prefijos, sufijos, flexión), p.ej. <em>study → studied / studying</em>.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Sintaxis</h4>
+              <p>Analiza cómo se combinan palabras en cláusulas: sujeto, núcleo verbal, complementos y relaciones de dependencia.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Pragmática</h4>
+              <p>Explica intención y contexto: pedir, sugerir, corregir, ser formal/informal y gestionar cortesía.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Fonología</h4>
+              <p>Describe patrones de sonido: vocales, consonantes, sílaba, acento, reducción y entonación en habla real.</p>
+            </article>
+          </div>
 
+          <h3>Plan por nivel (A1 → C2)</h3>
+
+          <details class="lesson-item" open>
+            <summary>A1 · Fundamentos</summary>
+            <ul>
+              <li>Pronombres, verbo <em>to be</em>, artículos y orden básico SVO.</li>
+              <li>IPA mínimo: vocales cortas/largas y pares básicos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>A2 · Construcción de hábito</summary>
+            <ul>
+              <li>Presente simple/progresivo, frecuencia, preguntas con DO/DOES.</li>
+              <li>Morfología verbal básica: tercera persona singular y -ing.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B1 · Expansión estructural</summary>
+            <ul>
+              <li>Pasado simple/progresivo, introducción al presente perfecto.</li>
+              <li>Funciones gramaticales: objeto directo/indirecto y complementos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B2 · Precisión funcional</summary>
+            <ul>
+              <li>Perfecto vs perfecto progresivo, voz pasiva, modales de probabilidad.</li>
+              <li>Pragmática aplicada: registro y matiz en contexto académico/profesional.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C1 · Competencia avanzada</summary>
+            <ul>
+              <li>Subordinación compleja, inversión marcada, cohesión discursiva.</li>
+              <li>Fonología avanzada: connected speech, weak forms, stress contrastivo.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C2 · Maestría lingüística</summary>
+            <ul>
+              <li>Control fino de estilo, ironía, implicaturas y pragmática intercultural.</li>
+              <li>Análisis morfosintáctico profundo y reformulación nativa.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="card">
+          <h3>Flashcards (Spaced Repetition)</h3>
+          <p>Subsección para vocabulario de inglés con <strong>IPA</strong>, <strong>categoría gramatical</strong> y <strong>traducción al español</strong>, usando repetición espaciada local (SM-2 simplificado).</p>
+
+          <h4>Repositorios GitHub recomendados para integrar</h4>
+          <ul class="repo-list">
+            <li><a href="https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler" target="_blank" rel="noopener noreferrer">open-spaced-repetition/free-spaced-repetition-scheduler</a> (motor SRS libre).</li>
+            <li><a href="https://github.com/ankitects/anki" target="_blank" rel="noopener noreferrer">ankitects/anki</a> (referencia de ecosistema SRS).</li>
+            <li><a href="https://github.com/cmusphinx/cmudict" target="_blank" rel="noopener noreferrer">cmusphinx/cmudict</a> (pronunciación para enriquecer IPA).</li>
+          </ul>
+
+          <p class="placeholder">Importa un mazo JSON desde un repositorio GitHub (URL RAW). Formato por tarjeta: <code>{"term":"thought","ipa":"/θɔːt/","pos":"NOUN","translationEs":"pensamiento","example":"That thought changed my plan."}</code></p>
+          <input id="flashcardRepoUrl" type="text" placeholder="https://raw.githubusercontent.com/usuario/repo/main/deck.json" />
+          <button id="importFlashcardsBtn" class="primary" type="button">Importar mazo desde GitHub</button>
+          <p id="flashcardImportStatus" class="placeholder"></p>
+
+          <div class="flashcard-box" id="flashcardBox"></div>
+        </article>
+      </section>
+
+      <section id="section-herramientas" class="section">
+        <article class="card">
+          <h2>Herramientas · Analizador de oraciones</h2>
+          <p>Analiza, corrige y entrena con adaptación por concepto.</p>
+
+          <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+          <button id="analyzeBtn" class="primary">Analizar oración</button>
+        </article>
+
+        <section id="clauseResult" class="card"></section>
+        <section id="feedbackResult" class="card"></section>
+
+        <section class="card">
+          <h3>Tokens y etiquetas</h3>
+          <ul id="tokenResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Perfil adaptativo</h3>
+          <ul id="profileResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Morfología</h3>
+          <ul id="morphologyResult"></ul>
+        </section>
+        <section class="card">
+          <h3>Menú léxico de palabra seleccionada</h3>
+          <div id="wordDetailResult" class="placeholder">Selecciona una palabra en Morfología para ver etimología, IPA y uso en oración.</div>
+        </section>
+
+        <section class="card">
+          <h3>Sintaxis (árbol morfosintáctico)</h3>
+          <pre id="syntaxResult" style="white-space: pre-wrap;"></pre>
+        </section>
+
+        <section class="card">
+          <h3>Semántica</h3>
+          <ul id="semanticsResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Pragmática</h3>
+          <ul id="pragmaticsResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Ejercicios generados</h3>
+          <div id="exerciseResult"></div>
+        </section>
+      </section>
+
+      <section id="section-juegos" class="section"><article class="card"><h2>Juegos</h2><p class="placeholder">Módulo RPG lingüístico (próxima iteración).</p></article></section>
+      <section id="section-comunidad" class="section"><article class="card"><h2>Comunidad</h2><p class="placeholder">Rankings, clubes y retos colaborativos.</p></article></section>
+      <section id="section-donaciones" class="section"><article class="card"><h2>Donaciones</h2><p class="placeholder">Soporte al proyecto y roadmap comunitario.</p></article></section>
+      <section id="section-opciones" class="section"><article class="card"><h2>Opciones</h2><p class="placeholder">Preferencias de idioma, tema y accesibilidad.</p></article></section>
+      <section id="section-signout" class="section"><article class="card"><h2>Sign out</h2><p class="placeholder">Cierre de sesión (pendiente de autenticación).</p></article></section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { analyze, evaluateExercise } from "./src/linguistics/analyzer.js"
+    import { getErrorProfile } from "./src/linguistics/errorProfile.js"
+
+    const menuList = document.getElementById("menuList")
+    const sections = Array.from(document.querySelectorAll(".section"))
+    const userLevel = document.getElementById("userLevel")
+    const levelDetails = document.getElementById("levelDetails")
+    const masteryPill = document.getElementById("masteryPill")
+
+    const sentenceInput = document.getElementById("sentenceInput")
+    const clauseResult = document.getElementById("clauseResult")
+    const feedbackResult = document.getElementById("feedbackResult")
+    const tokenResult = document.getElementById("tokenResult")
+    const exerciseResult = document.getElementById("exerciseResult")
+    const profileResult = document.getElementById("profileResult")
+    const morphologyResult = document.getElementById("morphologyResult")
+    const syntaxResult = document.getElementById("syntaxResult")
+    const semanticsResult = document.getElementById("semanticsResult")
+    const pragmaticsResult = document.getElementById("pragmaticsResult")
+    const wordDetailResult = document.getElementById("wordDetailResult")
+    const analyzeBtn = document.getElementById("analyzeBtn")
+
+    const yoLevel = document.getElementById("yoLevel")
+    const yoWordsLearned = document.getElementById("yoWordsLearned")
+    const yoGoalsInput = document.getElementById("yoGoalsInput")
+    const saveGoalsBtn = document.getElementById("saveGoalsBtn")
+    const yoGoalsStatus = document.getElementById("yoGoalsStatus")
+    const yoStatsList = document.getElementById("yoStatsList")
+    const yoCalendarPanel = document.getElementById("yoCalendarPanel")
+    const yoCalendarGrid = document.getElementById("yoCalendarGrid")
+    const yoCalendarYearLabel = document.getElementById("yoCalendarYearLabel")
+    const yoDateWeather = document.getElementById("yoDateWeather")
+    const yoPrevYearBtn = document.getElementById("yoPrevYearBtn")
+    const yoNextYearBtn = document.getElementById("yoNextYearBtn")
+    const yoProgressChart = document.getElementById("yoProgressChart")
+
+    const flashcardRepoUrl = document.getElementById("flashcardRepoUrl")
+    const importFlashcardsBtn = document.getElementById("importFlashcardsBtn")
+    const flashcardImportStatus = document.getElementById("flashcardImportStatus")
+    const flashcardBox = document.getElementById("flashcardBox")
+
+    let latestResult = null
+    let latestProfile = getErrorProfile()
+    let exerciseStates = {}
+    let selectedWordKey = null
+
+    const USER_PROGRESS_KEY = "hanari-user-progress-v1"
+    const MONTH_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    const WEEKDAY_SHORT = ["L", "M", "X", "J", "V", "S", "D"]
+
+    let yoCalendarYear = new Date().getFullYear()
+    let weatherCache = {
+      theme: "weather-cloudy",
+      label: "Clima no disponible",
+      emoji: "⛅",
+      fetchedAt: 0,
+      inFlight: null
+    }
+
+    const FLASHCARD_STORE_KEY = "hanari-flashcards-v1"
+    const FLASHCARD_SRS_KEY = "hanari-flashcards-srs-v1"
+    const STARTER_FLASHCARDS = [
+      { term: "thought", ipa: "/θɔːt/", pos: "NOUN", translationEs: "pensamiento", example: "That thought changed my plan." },
+      { term: "study", ipa: "/ˈstʌdi/", pos: "VERB", translationEs: "estudiar", example: "I study linguistics every day." },
+      { term: "auxiliary", ipa: "/ɔːɡˈzɪliəri/", pos: "NOUN", translationEs: "auxiliar", example: "Do is an auxiliary in questions." },
+      { term: "agreement", ipa: "/əˈɡriːmənt/", pos: "NOUN", translationEs: "concordancia", example: "Subject-verb agreement is essential." },
+      { term: "late", ipa: "/leɪt/", pos: "ADJ", translationEs: "tarde", example: "She is late for class." }
+    ]
+    let flashcards = []
+    let flashcardQueue = []
+    let currentFlashcard = null
+    let revealFlashcard = false
+
+    function defaultProgressState() {
+      return {
+        wordsLearned: {},
+        grammarAnswered: 0,
+        grammarCorrect: 0,
+        studyDays: {},
+        masteryHistory: [],
+        goals: ""
+      }
+    }
+
+    function getProgressState() {
+      try {
+        const raw = window.localStorage.getItem(USER_PROGRESS_KEY)
+        if (!raw) return defaultProgressState()
+        return { ...defaultProgressState(), ...JSON.parse(raw) }
+      } catch {
+        return defaultProgressState()
+      }
+    }
+
+    function saveProgressState(state) {
+      try {
+        window.localStorage.setItem(USER_PROGRESS_KEY, JSON.stringify(state))
+      } catch {
+        // no-op fallback for restricted environments
+      }
+    }
+
+    function isoDay(date) {
+      return date.toISOString().slice(0, 10)
+    }
+
+    function markStudyDay(state, date = new Date()) {
+      const key = isoDay(date)
+      state.studyDays[key] = (state.studyDays[key] ?? 0) + 1
+    }
+
+    function updateWordsLearnedFromResult(state, result) {
+      for (const token of (result?.tokens ?? [])) {
+        const normalized = String(token.token || "").toLowerCase().trim()
+        if (!normalized || normalized.length < 2) continue
+        state.wordsLearned[normalized] = true
+      }
+    }
+
+    function appendMasterySnapshot(state, profile) {
+      const levelData = calculateGlobalLevel(profile)
+      const today = isoDay(new Date())
+      const existing = (state.masteryHistory ?? []).find((point) => point.day === today)
+      const value = Number((levelData.mastery ?? 0).toFixed(4))
+      if (existing) existing.mastery = value
+      else state.masteryHistory.push({ day: today, mastery: value })
+      state.masteryHistory = state.masteryHistory.slice(-60)
+    }
+
+    function getWeatherTypeFromCode(code) {
+      if ([0, 1].includes(code)) return { theme: "weather-sunny", label: "Soleado", emoji: "☀️" }
+      if ([2, 3, 45, 48].includes(code)) return { theme: "weather-cloudy", label: "Nublado", emoji: "☁️" }
+      if ([71, 73, 75, 77, 85, 86].includes(code)) return { theme: "weather-snowy", label: "Nevando", emoji: "❄️" }
+      if ([95, 96, 99].includes(code)) return { theme: "weather-storm", label: "Tormenta", emoji: "⛈️" }
+      if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { theme: "weather-rainy", label: "Lluvia", emoji: "🌧️" }
+      return { theme: "weather-cloudy", label: "Variable", emoji: "⛅" }
+    }
+
+    function fallbackWeatherByMonth(monthIndex) {
+      if ([11, 0, 1].includes(monthIndex)) return { theme: "weather-cloudy", label: "Invierno", emoji: "⛅" }
+      if ([2, 3, 4].includes(monthIndex)) return { theme: "weather-rainy", label: "Primavera", emoji: "🌦️" }
+      if ([5, 6, 7].includes(monthIndex)) return { theme: "weather-sunny", label: "Verano", emoji: "☀️" }
+      return { theme: "weather-cloudy", label: "Otoño", emoji: "🍂" }
+    }
+
+    async function fetchCurrentWeather() {
+      const now = Date.now()
+      if (weatherCache.fetchedAt && now - weatherCache.fetchedAt < 30 * 60 * 1000) return weatherCache
+      if (weatherCache.inFlight) return weatherCache.inFlight
+
+      weatherCache.inFlight = (async () => {
+        try {
+          const getPosition = () => new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null)
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve(pos.coords),
+              () => resolve(null),
+              { enableHighAccuracy: false, timeout: 2000, maximumAge: 60 * 60 * 1000 }
+            )
+          })
+
+          const coords = await getPosition()
+          const latitude = coords?.latitude ?? 40.4168
+          const longitude = coords?.longitude ?? -3.7038
+
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=weather_code&timezone=auto`
+          const response = await fetch(url)
+          if (!response.ok) throw new Error("weather fetch failed")
+
+          const data = await response.json()
+          const weatherCode = data?.current?.weather_code
+          const weather = getWeatherTypeFromCode(weatherCode)
+          weatherCache = {
+            ...weather,
+            fetchedAt: Date.now(),
+            inFlight: null
+          }
+          return weatherCache
+        } catch {
+          const fallback = fallbackWeatherByMonth(new Date().getMonth())
+          weatherCache = {
+            ...fallback,
+            fetchedAt: Date.now(),
+            inFlight: null
+          }
+          return weatherCache
+        }
+      })()
+
+      return weatherCache.inFlight
+    }
+
+    function renderYoCalendarHeader() {
+      if (!yoCalendarYearLabel || !yoDateWeather) return
+      const now = new Date()
+      const dateLabel = now.toLocaleDateString("es-ES", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      })
+      yoCalendarYearLabel.textContent = String(yoCalendarYear)
+      yoDateWeather.textContent = `${dateLabel} · ${weatherCache.emoji} ${weatherCache.label}`
+      if (yoCalendarPanel) {
+        yoCalendarPanel.classList.remove("weather-sunny", "weather-rainy", "weather-cloudy", "weather-snowy", "weather-storm")
+        yoCalendarPanel.classList.add(weatherCache.theme)
+      }
+    }
+
+    function renderYoCalendar(state) {
+      if (!yoCalendarGrid) return
+
+      const today = new Date()
+      const todayIso = isoDay(today)
+      const monthsHtml = MONTH_LABELS.map((monthLabel, monthIndex) => {
+        const first = new Date(yoCalendarYear, monthIndex, 1)
+        const daysInMonth = new Date(yoCalendarYear, monthIndex + 1, 0).getDate()
+        const startOffset = (first.getDay() + 6) % 7
+
+        const dayCells = []
+        for (let i = 0; i < startOffset; i += 1) {
+          dayCells.push('<div class="day-cell empty"></div>')
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+          const date = new Date(yoCalendarYear, monthIndex, day)
+          const key = isoDay(date)
+          const studied = (state.studyDays?.[key] ?? 0) > 0
+          const isToday = key === todayIso
+          dayCells.push(`
+            <div class="day-cell ${studied ? "studied" : ""} ${isToday ? "today" : ""}" title="${key} · sesiones: ${state.studyDays?.[key] ?? 0}">
+              ${day}
+            </div>
+          `)
+        }
+
+        return `
+          <article class="month-card">
+            <div class="month-title">${monthLabel}</div>
+            <div class="month-weekdays">${WEEKDAY_SHORT.map((w) => `<span>${w}</span>`).join("")}</div>
+            <div class="month-days">${dayCells.join("")}</div>
+          </article>
+        `
+      }).join("")
+
+      yoCalendarGrid.innerHTML = monthsHtml
+      renderYoCalendarHeader()
+    }
+
+    function renderYoChart(state) {
+      if (!yoProgressChart) return
+      const ctx = yoProgressChart.getContext("2d")
+      if (!ctx) return
+
+      const points = (state.masteryHistory ?? []).slice(-30)
+      const width = yoProgressChart.width
+      const height = yoProgressChart.height
+      const pad = 24
+
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = "#ffffff"
+      ctx.fillRect(0, 0, width, height)
+
+      ctx.strokeStyle = "#e5e7eb"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(pad, height - pad)
+      ctx.lineTo(width - pad, height - pad)
+      ctx.moveTo(pad, pad)
+      ctx.lineTo(pad, height - pad)
+      ctx.stroke()
+
+      if (!points.length) {
+        ctx.fillStyle = "#6b7280"
+        ctx.font = "14px Arial"
+        ctx.fillText("Aún no hay histórico de progreso.", pad + 8, height / 2)
+        return
+      }
+
+      const stepX = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0
+      ctx.strokeStyle = "#2563eb"
+      ctx.lineWidth = 2
+      ctx.beginPath()
+
+      points.forEach((point, idx) => {
+        const x = pad + idx * stepX
+        const y = height - pad - (Math.max(0, Math.min(1, point.mastery ?? 0)) * (height - pad * 2))
+        if (idx === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      })
+      ctx.stroke()
+
+      ctx.fillStyle = "#3730a3"
+      points.forEach((point, idx) => {
+        const x = pad + idx * stepX
+        const y = height - pad - (Math.max(0, Math.min(1, point.mastery ?? 0)) * (height - pad * 2))
+        ctx.beginPath()
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
+
+    function renderYoSection(profile) {
+      const progress = getProgressState()
+      const levelData = calculateGlobalLevel(profile)
+      const wordsLearnedCount = Object.keys(progress.wordsLearned ?? {}).length
+      const grammarAnswered = progress.grammarAnswered ?? 0
+      const grammarCorrect = progress.grammarCorrect ?? 0
+      const accuracy = grammarAnswered ? (grammarCorrect / grammarAnswered) * 100 : 0
+
+      if (yoLevel) yoLevel.textContent = levelData.label
+      if (yoWordsLearned) yoWordsLearned.textContent = String(wordsLearnedCount)
+      if (yoGoalsInput && document.activeElement !== yoGoalsInput) yoGoalsInput.value = progress.goals ?? ""
+
+      if (yoStatsList) {
+        yoStatsList.innerHTML = `
+          <li><strong>Palabras aprendidas:</strong> ${wordsLearnedCount}</li>
+          <li><strong>Preguntas de gramática respondidas:</strong> ${grammarAnswered}</li>
+          <li><strong>Preguntas correctas:</strong> ${grammarCorrect}</li>
+          <li><strong>Precisión gramatical:</strong> ${accuracy.toFixed(0)}%</li>
+        `
+      }
+
+      renderYoCalendar(progress)
+      renderYoChart(progress)
+      fetchCurrentWeather().then(() => renderYoCalendarHeader())
+    }
+
+    if (yoPrevYearBtn) {
+      yoPrevYearBtn.addEventListener("click", () => {
+        yoCalendarYear -= 1
+        renderYoSection(latestProfile)
+      })
+    }
+
+    if (yoNextYearBtn) {
+      yoNextYearBtn.addEventListener("click", () => {
+        yoCalendarYear += 1
+        renderYoSection(latestProfile)
+      })
+    }
+
+    if (saveGoalsBtn) {
+      saveGoalsBtn.addEventListener("click", () => {
+        const progress = getProgressState()
+        progress.goals = yoGoalsInput?.value?.trim() ?? ""
+        markStudyDay(progress)
+        saveProgressState(progress)
+        if (yoGoalsStatus) yoGoalsStatus.textContent = "Metas guardadas correctamente."
+        renderYoSection(latestProfile)
+      })
+    }
+
+    function normalizeFlashcard(item) {
+      return {
+        id: item.id ?? `${String(item.term ?? "").toLowerCase()}-${String(item.pos ?? "lex").toLowerCase()}`,
+        term: String(item.term ?? "").trim(),
+        ipa: String(item.ipa ?? "").trim(),
+        pos: String(item.pos ?? "LEX").trim().toUpperCase(),
+        translationEs: String(item.translationEs ?? item.translation ?? "").trim(),
+        example: String(item.example ?? "").trim()
+      }
+    }
+
+    function loadFlashcards() {
+      try {
+        const raw = window.localStorage.getItem(FLASHCARD_STORE_KEY)
+        const parsed = raw ? JSON.parse(raw) : STARTER_FLASHCARDS
+        flashcards = parsed.map(normalizeFlashcard).filter((c) => c.term && c.translationEs)
+      } catch {
+        flashcards = STARTER_FLASHCARDS.map(normalizeFlashcard)
+      }
+      if (!flashcards.length) flashcards = STARTER_FLASHCARDS.map(normalizeFlashcard)
+    }
+
+    function saveFlashcards() {
+      try { window.localStorage.setItem(FLASHCARD_STORE_KEY, JSON.stringify(flashcards)) } catch {}
+    }
+
+    function loadSrsState() {
+      try { return JSON.parse(window.localStorage.getItem(FLASHCARD_SRS_KEY) || "{}") } catch { return {} }
+    }
+
+    function saveSrsState(state) {
+      try { window.localStorage.setItem(FLASHCARD_SRS_KEY, JSON.stringify(state)) } catch {}
+    }
+
+    function getCardSrs(cardId) {
+      const store = loadSrsState()
+      return store[cardId] ?? { interval: 0, ease: 2.5, reps: 0, dueAt: 0 }
+    }
+
+    function setCardSrs(cardId, next) {
+      const store = loadSrsState()
+      store[cardId] = next
+      saveSrsState(store)
+    }
+
+    function buildDueFlashcardQueue() {
+      const now = Date.now()
+      const withSrs = flashcards.map((card) => ({ card, srs: getCardSrs(card.id) }))
+      const due = withSrs.filter((entry) => (entry.srs.dueAt ?? 0) <= now).map((entry) => entry.card)
+      const fallback = withSrs.sort((a, b) => (a.srs.dueAt ?? 0) - (b.srs.dueAt ?? 0)).map((entry) => entry.card)
+      flashcardQueue = due.length ? due : fallback
+    }
+
+    function pickNextFlashcard() {
+      buildDueFlashcardQueue()
+      currentFlashcard = flashcardQueue[0] ?? null
+      revealFlashcard = false
+      renderFlashcards()
+    }
+
+    function computeSm2(srs, quality) {
+      let ease = srs.ease ?? 2.5
+      let reps = srs.reps ?? 0
+      let interval = srs.interval ?? 0
+
+      if (quality < 3) {
+        reps = 0
+        interval = 1
+      } else {
+        reps += 1
+        if (reps === 1) interval = 1
+        else if (reps === 2) interval = 3
+        else interval = Math.max(1, Math.round(interval * ease))
+      }
+
+      ease = Math.max(1.3, ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
+      return {
+        reps,
+        interval,
+        ease,
+        dueAt: Date.now() + interval * 24 * 60 * 60 * 1000
+      }
+    }
+
+    function reviewFlashcard(quality) {
+      if (!currentFlashcard) return
+      const srs = getCardSrs(currentFlashcard.id)
+      const next = computeSm2(srs, quality)
+      setCardSrs(currentFlashcard.id, next)
+
+      const progress = getProgressState()
+      progress.grammarAnswered = (progress.grammarAnswered ?? 0) + 1
+      if (quality >= 3) progress.grammarCorrect = (progress.grammarCorrect ?? 0) + 1
+      progress.wordsLearned[currentFlashcard.term.toLowerCase()] = true
+      markStudyDay(progress)
+      saveProgressState(progress)
+
+      pickNextFlashcard()
+      renderYoSection(latestProfile)
+    }
+
+    function renderFlashcards() {
+      if (!flashcardBox) return
+      if (!currentFlashcard) {
+        flashcardBox.innerHTML = `<p>No hay tarjetas disponibles.</p>`
+        return
+      }
+
+      const dueCount = flashcardQueue.length
+      flashcardBox.innerHTML = `
+        <div class="flashcard-head">
+          <div>
+            <p class="flashcard-term">${currentFlashcard.term}</p>
+            <p class="flashcard-meta">${currentFlashcard.ipa || "IPA pendiente"} · ${currentFlashcard.pos}</p>
+          </div>
+          <span class="pill">Tarjetas pendientes: ${dueCount}</span>
+        </div>
+
+        ${revealFlashcard ? `
+          <div class="flashcard-answer">
+            <p><strong>Traducción:</strong> ${currentFlashcard.translationEs}</p>
+            <p><strong>Ejemplo:</strong> ${currentFlashcard.example || "Sin ejemplo"}</p>
+            <div class="flashcard-actions">
+              <button type="button" onclick="reviewFlashcard(2)">Again</button>
+              <button type="button" onclick="reviewFlashcard(3)">Hard</button>
+              <button type="button" onclick="reviewFlashcard(4)">Good</button>
+              <button type="button" onclick="reviewFlashcard(5)">Easy</button>
+            </div>
+          </div>
+        ` : `<button type="button" class="primary" onclick="revealCurrentFlashcard()">Mostrar respuesta</button>`}
+      `
+    }
+
+    function revealCurrentFlashcard() {
+      revealFlashcard = true
+      renderFlashcards()
+    }
+
+    async function importFlashcardsFromGithub() {
+      const url = flashcardRepoUrl?.value?.trim()
+      if (!url) {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = "Escribe una URL RAW de GitHub para importar."
+        return
+      }
+
+      try {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = "Importando mazo..."
+        const response = await fetch(url)
+        if (!response.ok) throw new Error("No se pudo descargar el JSON")
+        const payload = await response.json()
+        const deck = Array.isArray(payload) ? payload : (payload.cards ?? [])
+        const normalized = deck.map(normalizeFlashcard).filter((c) => c.term && c.translationEs)
+        if (!normalized.length) throw new Error("El mazo no trae tarjetas válidas")
+
+        flashcards = normalized
+        saveFlashcards()
+        pickNextFlashcard()
+
+        if (flashcardImportStatus) flashcardImportStatus.textContent = `Mazo importado: ${normalized.length} flashcards.`
+      } catch (error) {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = `Importación fallida: ${error.message}`
+      }
+    }
+
+    function switchSection(sectionId) {
+      sections.forEach((section) => {
+        section.classList.toggle("active", section.id === `section-${sectionId}`)
+      })
+
+      menuList.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.section === sectionId)
+      })
+    }
+
+    menuList.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-section]")
+      if (!btn) return
+      switchSection(btn.dataset.section)
+    })
+
+    if (importFlashcardsBtn) {
+      importFlashcardsBtn.addEventListener("click", importFlashcardsFromGithub)
+    }
+
+    function calculateGlobalLevel(profile) {
+      const concepts = Object.values(profile?.concepts ?? {})
+      if (!concepts.length) {
+        return { label: "Nivel 1 · Inicio", mastery: 0, detail: "Aún no hay suficientes intentos para calcular progresión fina." }
+      }
+
+      const avgMastery = concepts.reduce((acc, s) => acc + (s.mastery ?? 0), 0) / concepts.length
+      const level = Math.max(1, Math.min(20, Math.floor(avgMastery * 20) || 1))
+      return {
+        label: `Nivel ${level}`,
+        mastery: avgMastery,
+        detail: `Progreso estimado con ${concepts.length} conceptos activos.`
+      }
+    }
+
+    function renderHome(profile) {
+      const levelData = calculateGlobalLevel(profile)
+      userLevel.textContent = levelData.label
+      masteryPill.textContent = `Mastery global: ${(levelData.mastery * 100).toFixed(0)}%`
+      levelDetails.textContent = levelData.detail
+      renderYoSection(profile)
+    }
+
+    function renderFeedback(result) {
+      if (!result.errors.length) {
+        feedbackResult.innerHTML = `<h3 class="ok">Sin errores detectados</h3><p>La oración pasa las reglas actuales del MVP.</p>`
+        return
+      }
+
+      const errorsHtml = result.errors.map((err) => `
+        <article class="error">
+          <strong>${err.title}</strong>
+          <p><strong>Qué está mal:</strong> ${err.explanation}</p>
+          <p><strong>Por qué:</strong> ${err.why}</p>
+          <p><strong>Sugerencia:</strong> ${err.suggestion}</p>
+        </article>
+      `).join("")
+
+      feedbackResult.innerHTML = `
+        <h3>Corrección y explicación</h3>
+        <p><strong>Oración sugerida:</strong> ${result.correction}</p>
+        ${errorsHtml}
+      `
+    }
+
+    
+    
+    function renderWordDetails(wordEntry) {
+      if (!wordEntry || !wordEntry.knowledge) {
+        wordDetailResult.innerHTML = `<p class="placeholder">Sin entrada de corpus para esta palabra todavía.</p>`
+        return
+      }
+
+      const k = wordEntry.knowledge
+      wordDetailResult.innerHTML = `
+        <p><strong>Palabra:</strong> ${wordEntry.token}</p>
+        <p><strong>IPA:</strong> ${k.ipa}</p>
+        <p><strong>Qué es:</strong> ${k.wordClass}</p>
+        <p><strong>Etimología:</strong> ${k.etymology}</p>
+        <p><strong>Significado:</strong> ${k.meaning}</p>
+        <p><strong>Uso en oración:</strong> ${k.usage}</p>
+        <p><strong>Nota didáctica:</strong> ${k.notes}</p>
+        <p class="placeholder"><em>Forma base (lemma)</em> = palabra canónica; <em>POS</em> = categoría gramatical.</p>
+      `
+    }
+
+    function selectWord(token) {
+      if (!latestResult?.morphology) return
+      selectedWordKey = token
+      const wordEntry = latestResult.morphology.find((m) => m.token === token)
+      renderWordDetails(wordEntry)
+      renderLinguisticLayers(latestResult)
+    }
+
+    window.selectWord = selectWord
+
+    function renderLinguisticLayers(result) {
+      morphologyResult.innerHTML = (result.morphology ?? []).map((m) => {
+        const active = selectedWordKey === m.token ? "style=\"font-weight:700;\"" : ""
+        return `<li><button type="button" onclick="selectWord('${m.token}')" ${active}>${m.token}</button> → forma base (lemma): ${m.lemma}, categoría gramatical (POS): ${m.pos}, rasgos: ${m.features.join(", ") || "none"}</li>`
+      }).join("") || "<li>Sin datos morfológicos.</li>"
+
+      syntaxResult.textContent = result.syntax?.bracketed ?? "Sin árbol sintáctico."
+
+      const semantics = result.semantics
+      semanticsResult.innerHTML = semantics
+        ? `
+            <li><strong>Predicado:</strong> ${semantics.predicate ?? "N/A"}</li>
+            <li><strong>Agente:</strong> ${semantics.roles?.agent ?? "N/A"}</li>
+            <li><strong>Acción:</strong> ${semantics.roles?.action ?? "N/A"}</li>
+            <li><strong>Tema:</strong> ${semantics.roles?.theme ?? "N/A"}</li>
+            <li><strong>Polaridad:</strong> ${semantics.polarity}</li>
+            <li><strong>Modalidad:</strong> ${semantics.modality}</li>
+          `
+        : "<li>Sin datos semánticos.</li>"
+
+      const pragmatics = result.pragmatics
+      pragmaticsResult.innerHTML = pragmatics
+        ? `
+            <li><strong>Acto de habla:</strong> ${pragmatics.speechAct}</li>
+            <li><strong>Cortesía:</strong> ${pragmatics.politeness}</li>
+            <li><strong>Intención comunicativa:</strong> ${pragmatics.communicativeIntent}</li>
+          `
+        : "<li>Sin datos pragmáticos.</li>"
+    }
+
+    function renderProfile(profile) {
+      const concepts = Object.entries(profile?.concepts ?? {})
+      profileResult.innerHTML = concepts.length
+        ? concepts.map(([name, stats]) => `
+            <li><strong>${name}</strong> · intentos: ${stats.attempts} · aciertos: ${stats.correct} · fallos: ${stats.mistakes} · mastery: ${(stats.mastery * 100).toFixed(0)}%</li>
+          `).join("")
+        : "<li>Sin historial todavía.</li>"
+    }
+
+    function readExerciseAnswer(exercise) {
+      if (exercise.type === "single-choice") {
+        const checked = document.querySelector(`input[name='${exercise.id}']:checked`)
+        return checked ? checked.value : ""
+      }
+
+      if (exercise.type === "multi-select") {
+        return Array.from(document.querySelectorAll(`input[name='${exercise.id}']:checked`)).map((el) => el.value)
+      }
+
+      return document.getElementById(`answer-${exercise.id}`)?.value ?? ""
+    }
+
+    function buildExerciseFields(exercise) {
+      if (exercise.type === "single-choice") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="radio" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      if (exercise.type === "multi-select") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="checkbox" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      return `<input id="answer-${exercise.id}" type="text" placeholder="Escribe tu respuesta" />`
+    }
+
+    function submitExercise(exerciseId) {
+      const exercise = latestResult?.exercises?.find((item) => item.id === exerciseId)
+      if (!exercise) return
+
+      const userAnswer = readExerciseAnswer(exercise)
+      const evaluation = evaluateExercise(exercise, userAnswer)
+      latestProfile = evaluation.profile
+
+      const progress = getProgressState()
+      progress.grammarAnswered = (progress.grammarAnswered ?? 0) + 1
+      if (evaluation.isCorrect) {
+        progress.grammarCorrect = (progress.grammarCorrect ?? 0) + 1
+      }
+      markStudyDay(progress)
+      appendMasterySnapshot(progress, latestProfile)
+      saveProgressState(progress)
+
+      exerciseStates[exerciseId] = {
+        isCorrect: evaluation.isCorrect,
+        feedback: evaluation.feedback,
+        expectedAnswers: evaluation.expectedAnswers
+      }
+
+      renderExercises(latestResult.exercises)
+      renderProfile(latestProfile)
+      renderHome(latestProfile)
+    }
+
+    window.submitExercise = submitExercise
+    window.reviewFlashcard = reviewFlashcard
+    window.revealCurrentFlashcard = revealCurrentFlashcard
+
+    function renderExercises(exercises) {
+      if (!exercises.length) {
+        exerciseResult.innerHTML = "<p>No hay ejercicios porque no se detectaron errores.</p>"
+        return
+      }
+
+      exerciseResult.innerHTML = exercises.map((exercise) => {
+        const status = exerciseStates[exercise.id]
+        const reveal = status && !status.isCorrect
+
+        return `
+          <article class="exercise" id="exercise-${exercise.id}">
+            <div><strong>${exercise.type}</strong> <span class="pill">${exercise.difficulty}</span> <span class="pill">${exercise.focus}</span></div>
+            <p>${exercise.prompt}</p>
+            <div>${buildExerciseFields(exercise)}</div>
+            <button type="button" class="primary" onclick="submitExercise('${exercise.id}')">Responder</button>
+            ${status ? `<p class="feedback">${status.feedback}</p>` : ""}
+            ${reveal ? `<p class="feedback"><strong>Respuesta esperada:</strong> ${status.expectedAnswers.join(" | ")}</p>` : ""}
+          </article>
+        `
+      }).join("")
+    }
+
+    function renderAnalyzer(result) {
+      latestResult = result
+      latestProfile = result.profile
+      exerciseStates = {}
+      selectedWordKey = null
+
+      const progress = getProgressState()
+      updateWordsLearnedFromResult(progress, result)
+      markStudyDay(progress)
+      appendMasterySnapshot(progress, latestProfile)
+      saveProgressState(progress)
+
+      if (!result.clause) {
+        clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
+        tokenResult.innerHTML = ""
+        renderFeedback(result)
+        renderExercises(result.exercises)
+        renderProfile(result.profile)
+        renderLinguisticLayers(result)
+        renderWordDetails(null)
+        renderHome(result.profile)
+        return
+      }
+
+      clauseResult.innerHTML = `
+        <h3>Estructura de cláusula</h3>
+        <p><strong>Subject:</strong> ${result.clause.subject ?? "N/A"}</p>
+        <p><strong>Auxiliary:</strong> ${result.clause.auxiliary ?? "N/A"}</p>
+        <p><strong>Main verb:</strong> ${result.clause.mainVerb ?? "N/A"}</p>
+        <p><strong>Verb role:</strong> ${result.clause.verbRole ?? "N/A"}</p>
+        <p><strong>Predicate complement:</strong> ${result.clause.predicateComplement ?? "N/A"}</p>
+        <p><strong>Aspect:</strong> ${result.clause.aspect}</p>
+        <p><strong>Function:</strong> ${result.clause.function}</p>
+      `
+
+      tokenResult.innerHTML = result.tokens.map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`).join("")
+
+      renderFeedback(result)
+      renderExercises(result.exercises)
+      renderProfile(result.profile)
+      renderLinguisticLayers(result)
+      const firstKnownWord = result.morphology?.find((m) => m.knowledge) ?? null
+      renderWordDetails(firstKnownWord ?? result.morphology?.[0] ?? null)
+      renderHome(result.profile)
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+      const result = analyze(sentenceInput.value)
+      renderAnalyzer(result)
+      switchSection("herramientas")
+    })
+
+    loadFlashcards()
+    pickNextFlashcard()
+    renderHome(latestProfile)
+  </script>
 </body>
 </html>
