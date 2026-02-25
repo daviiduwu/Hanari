@@ -1,53 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Hanari</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanari · English Linguistics Trainer</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+    textarea { width: 100%; min-height: 80px; padding: 0.75rem; }
+    button { margin-top: 0.75rem; padding: 0.6rem 1rem; }
+    .card { margin-top: 1rem; border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem; }
+    .error { border-left: 4px solid #c0392b; padding-left: 0.75rem; margin: 0.75rem 0; }
+    .ok { color: #1f8b4c; }
+    ul { padding-left: 1rem; }
+  </style>
 </head>
 <body>
+  <h1>Hanari · Entrenador lingüístico de inglés</h1>
+  <p>Analiza, corrige y genera práctica desde los errores conceptuales.</p>
 
-<h1>English Linguistics Trainer</h1>
+  <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+  <button id="analyzeBtn">Analizar oración</button>
 
-<p>Escribe una oración en inglés para analizarla:</p>
+  <section id="clauseResult" class="card"></section>
+  <section id="feedbackResult" class="card"></section>
+  <section class="card">
+    <h3>Tokens y etiquetas</h3>
+    <ul id="tokenResult"></ul>
+  </section>
+  <section class="card">
+    <h3>Ejercicios generados</h3>
+    <ul id="exerciseResult"></ul>
+  </section>
 
-<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+  <script type="module">
+    import { analyze } from "./src/linguistics/analyzer.js"
 
-<button onclick="analyzeSentence()">Analizar oración</button>
+    const sentenceInput = document.getElementById("sentenceInput")
+    const clauseResult = document.getElementById("clauseResult")
+    const feedbackResult = document.getElementById("feedbackResult")
+    const tokenResult = document.getElementById("tokenResult")
+    const exerciseResult = document.getElementById("exerciseResult")
+    const analyzeBtn = document.getElementById("analyzeBtn")
 
-<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
+    function renderFeedback(result) {
+      if (!result.errors.length) {
+        feedbackResult.innerHTML = `<h3 class="ok">Sin errores detectados</h3><p>La oración pasa las reglas actuales del MVP.</p>`
+        return
+      }
 
-<script>
-function analyzeSentence() {
-  const sentence = document.getElementById("sentenceInput").value;
+      const errorsHtml = result.errors.map((err) => `
+        <article class="error">
+          <strong>${err.title}</strong>
+          <p><strong>Qué está mal:</strong> ${err.explanation}</p>
+          <p><strong>Por qué:</strong> ${err.why}</p>
+          <p><strong>Sugerencia:</strong> ${err.suggestion}</p>
+        </article>
+      `).join("")
 
-  // Inicializamos variables
-  let subject = "No identificado";
-  let auxiliary = "No identificado";
-  let mainVerb = "No identificado";
-  let aspect = "No identificado";
-  let func = "No identificado";
+      feedbackResult.innerHTML = `
+        <h3>Corrección y explicación</h3>
+        <p><strong>Oración sugerida:</strong> ${result.correction}</p>
+        ${errorsHtml}
+      `
+    }
 
-  // Patrón muy básico para oraciones como "She is studying English"
-  const words = sentence.split(" ");
+    function renderExercises(exercises) {
+      exerciseResult.innerHTML = exercises
+        .map((ex) => `<li><strong>${ex.type}</strong> · ${ex.prompt}<br/><em>Respuesta:</em> ${ex.answer}</li>`)
+        .join("") || "<li>No hay ejercicios porque no se detectaron errores.</li>"
+    }
 
-  if(words.length >= 3) {
-    subject = words[0];
-    auxiliary = words[1];
-    mainVerb = words[2];
-    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
-    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
-  }
+    function render(result) {
+      if (!result.clause) {
+        clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
+        tokenResult.innerHTML = ""
+        renderFeedback(result)
+        renderExercises(result.exercises)
+        return
+      }
 
-  // Mostrar resultado
-  document.getElementById("analysis").innerHTML = `
-    <strong>Oración analizada:</strong> ${sentence}<br>
-    Subject: ${subject}<br>
-    Auxiliary verb: ${auxiliary}<br>
-    Main verb: ${mainVerb}<br>
-    Aspect: ${aspect}<br>
-    Function: ${func}
-  `;
-}
-</script>
+      clauseResult.innerHTML = `
+        <h3>Estructura de cláusula</h3>
+        <p><strong>Subject:</strong> ${result.clause.subject ?? "N/A"}</p>
+        <p><strong>Auxiliary:</strong> ${result.clause.auxiliary ?? "N/A"}</p>
+        <p><strong>Main verb:</strong> ${result.clause.mainVerb ?? "N/A"}</p>
+        <p><strong>Aspect:</strong> ${result.clause.aspect}</p>
+        <p><strong>Function:</strong> ${result.clause.function}</p>
+      `
 
+      tokenResult.innerHTML = result.tokens
+        .map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`)
+        .join("")
+
+      renderFeedback(result)
+      renderExercises(result.exercises)
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+      const result = analyze(sentenceInput.value)
+      render(result)
+    })
+  </script>
 </body>
 </html>
