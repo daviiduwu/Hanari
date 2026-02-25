@@ -2,6 +2,13 @@
  * Rule-based linguistic analyzer + feedback engine (MVP).
  * Compatible with static hosting (GitHub Pages).
  */
+import {
+  getConceptDifficulty,
+  getErrorProfile,
+  recordConceptErrors,
+  recordExerciseOutcome
+} from "./errorProfile.js"
+
 const AUXILIARIES = new Set([
   "am", "is", "are", "was", "were", "be", "been", "being",
   "do", "does", "did",
@@ -21,6 +28,20 @@ const SUBJECT_AUX_RULES = {
   it: new Set(["is", "was", "has", "had", "does"]),
   we: new Set(["are", "were", "have", "had", "do"]),
   they: new Set(["are", "were", "have", "had", "do"])
+}
+
+const ERROR_TO_CONCEPT = {
+  SUBJECT_AUX_AGREEMENT: "subject-auxiliary-agreement",
+  MISSING_PROGRESSIVE_AUX: "progressive-aspect",
+  PERFECT_WITHOUT_PARTICIPLE: "perfect-aspect"
+}
+
+function normalizeText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?;:]/g, "")
+    .replace(/\s+/g, " ")
 }
 
 function tokenize(text) {
@@ -88,6 +109,7 @@ function explainError(code, details) {
 
   return {
     code,
+    concept: ERROR_TO_CONCEPT[code] ?? "clause-structure",
     title: byCode[code].title,
     why: byCode[code].why,
     explanation: byCode[code].explanation,
@@ -102,15 +124,14 @@ function buildCorrection(sentence, errors, clause) {
 
   errors.forEach((err) => {
     if (err.code === "SUBJECT_AUX_AGREEMENT" && clause.subject && clause.auxiliary) {
-      corrected = corrected.replace(
-        new RegExp(`\\b${clause.auxiliary}\\b`, "i"),
-        err.suggestion
-      )
+      corrected = corrected.replace(new RegExp(`\\b${clause.auxiliary}\\b`, "i"), err.suggestion)
     }
 
     if (err.code === "MISSING_PROGRESSIVE_AUX" && clause.subject && clause.mainVerb) {
       const lowerSubject = clause.subject.toLowerCase()
-      const suggestedAux = ["he", "she", "it"].includes(lowerSubject) ? "is" : "are"
+      const suggestedAux = ["he", "she", "it", "i"].includes(lowerSubject)
+        ? (lowerSubject === "i" ? "am" : "is")
+        : "are"
       corrected = corrected.replace(
         new RegExp(`\\b${clause.subject}\\s+${clause.mainVerb}\\b`, "i"),
         `${clause.subject} ${suggestedAux} ${clause.mainVerb}`
@@ -121,49 +142,86 @@ function buildCorrection(sentence, errors, clause) {
   return corrected
 }
 
-function generateExercises(errors, clause) {
-  return errors.map((err, index) => {
-    if (err.code === "SUBJECT_AUX_AGREEMENT") {
+function buildExerciseForDifficulty(error, clause, difficulty, index) {
+  if (error.code === "SUBJECT_AUX_AGREEMENT") {
+    if (difficulty === "hard") {
       return {
         id: `ex-${index + 1}`,
-        focus: "subject-auxiliary-agreement",
-        type: "fill-in-the-blank",
-        prompt: `Completa con el auxiliar correcto: "${clause.subject} ____ studying syntax."`,
-        answer: err.suggestion,
+        focus: error.concept,
+        difficulty,
+        type: "multi-select",
+        prompt: "Selecciona todas las oraciones correctas.",
+        options: [
+          "She is studying syntax.",
+          "She are studying syntax.",
+          "She has studying syntax.",
+          "She is studying linguistics."
+        ],
+        expectedAnswers: ["She is studying syntax.", "She is studying linguistics."],
         concept: "Concordancia sujeto-auxiliar en presente"
-      }
-    }
-
-    if (err.code === "MISSING_PROGRESSIVE_AUX") {
-      return {
-        id: `ex-${index + 1}`,
-        focus: "progressive-aspect",
-        type: "rewrite",
-        prompt: `Reescribe correctamente: "${clause.subject} ${clause.mainVerb} English now."`,
-        answer: `${clause.subject} ${["he", "she", "it"].includes(clause.subject.toLowerCase()) ? "is" : "are"} ${clause.mainVerb} English now.`,
-        concept: "Aspecto progresivo: BE + V-ing"
-      }
-    }
-
-    if (err.code === "PERFECT_WITHOUT_PARTICIPLE") {
-      return {
-        id: `ex-${index + 1}`,
-        focus: "perfect-aspect",
-        type: "multiple-choice",
-        prompt: `Elige la forma correcta: "She has ____ linguistics." (study / studied / studying)`,
-        answer: "studied",
-        concept: "Aspecto perfecto: HAVE + participio"
       }
     }
 
     return {
       id: `ex-${index + 1}`,
-      focus: "general-grammar",
-      type: "reflection",
-      prompt: "Explica por qué esta oración necesita revisión gramatical.",
-      answer: "Revisar estructura sujeto + auxiliar + verbo principal.",
-      concept: "Estructura de cláusula"
+      focus: error.concept,
+      difficulty,
+      type: "fill-in-the-blank",
+      prompt: `Completa con el auxiliar correcto: "${clause.subject} ____ studying syntax."`,
+      expectedAnswers: [error.suggestion],
+      concept: "Concordancia sujeto-auxiliar en presente"
     }
+  }
+
+  if (error.code === "MISSING_PROGRESSIVE_AUX") {
+    const aux = ["he", "she", "it", "i"].includes(clause.subject.toLowerCase())
+      ? (clause.subject.toLowerCase() === "i" ? "am" : "is")
+      : "are"
+
+    return {
+      id: `ex-${index + 1}`,
+      focus: error.concept,
+      difficulty,
+      type: difficulty === "easy" ? "rewrite" : "short-answer",
+      prompt: difficulty === "easy"
+        ? `Reescribe correctamente: "${clause.subject} ${clause.mainVerb} English now."`
+        : `Escribe una oración en progresivo con sujeto '${clause.subject}' y verbo '${clause.mainVerb}'.`,
+      expectedAnswers: [
+        `${clause.subject} ${aux} ${clause.mainVerb} English now.`,
+        `${clause.subject} ${aux} ${clause.mainVerb} english now`
+      ],
+      concept: "Aspecto progresivo: BE + V-ing"
+    }
+  }
+
+  if (error.code === "PERFECT_WITHOUT_PARTICIPLE") {
+    return {
+      id: `ex-${index + 1}`,
+      focus: error.concept,
+      difficulty,
+      type: "single-choice",
+      prompt: "Elige la forma correcta.",
+      options: ["study", "studied", "studying"],
+      expectedAnswers: ["studied"],
+      concept: "Aspecto perfecto: HAVE + participio"
+    }
+  }
+
+  return {
+    id: `ex-${index + 1}`,
+    focus: "clause-structure",
+    difficulty,
+    type: "short-answer",
+    prompt: "Explica por qué esta oración necesita revisión gramatical.",
+    expectedAnswers: ["sujeto auxiliar verbo"],
+    concept: "Estructura de cláusula"
+  }
+}
+
+function generateExercises(errors, clause, profile) {
+  return errors.map((error, index) => {
+    const difficulty = getConceptDifficulty(profile, error.concept)
+    return buildExerciseForDifficulty(error, clause, difficulty, index)
   })
 }
 
@@ -180,7 +238,7 @@ function detectErrors(sentence, clause) {
   const lowerMainVerb = clause.mainVerb?.toLowerCase()
 
   if (lowerSubject && lowerAux && SUBJECT_AUX_RULES[lowerSubject] && !SUBJECT_AUX_RULES[lowerSubject].has(lowerAux)) {
-    const suggestion = ["he", "she", "it"].includes(lowerSubject) ? "is" : "are"
+    const suggestion = ["he", "she", "it"].includes(lowerSubject) ? "is" : lowerSubject === "i" ? "am" : "are"
     errors.push(explainError("SUBJECT_AUX_AGREEMENT", {
       subject: clause.subject,
       auxiliary: clause.auxiliary,
@@ -188,11 +246,11 @@ function detectErrors(sentence, clause) {
     }))
   }
 
-  if (!lowerAux && lowerMainVerb?.endsWith("ing")) {
-    const suggestion = ["he", "she", "it"].includes(lowerSubject) ? "is" : "are"
+  if (!lowerAux && lowerMainVerb?.endsWith("ing") && lowerSubject) {
+    const aux = ["he", "she", "it"].includes(lowerSubject) ? "is" : lowerSubject === "i" ? "am" : "are"
     errors.push(explainError("MISSING_PROGRESSIVE_AUX", {
       mainVerb: clause.mainVerb,
-      suggestion: `${suggestion} ${clause.mainVerb}`
+      suggestion: `${aux} ${clause.mainVerb}`
     }))
   }
 
@@ -206,18 +264,40 @@ function detectErrors(sentence, clause) {
   return errors
 }
 
+export function evaluateExercise(exercise, userAnswer) {
+  const normalizedUser = Array.isArray(userAnswer)
+    ? userAnswer.map(normalizeText).filter(Boolean).sort()
+    : [normalizeText(userAnswer)].filter(Boolean)
+
+  const normalizedExpected = (exercise.expectedAnswers ?? []).map(normalizeText).filter(Boolean).sort()
+
+  const isCorrect = normalizedUser.length > 0 && JSON.stringify(normalizedUser) === JSON.stringify(normalizedExpected)
+  const profile = recordExerciseOutcome(exercise.focus, isCorrect)
+
+  return {
+    isCorrect,
+    feedback: isCorrect
+      ? "✅ Correcto. Tu respuesta demuestra control del concepto."
+      : "❌ Incorrecto. Revisa el concepto y vuelve a intentarlo.",
+    expectedAnswers: isCorrect ? [] : (exercise.expectedAnswers ?? []),
+    profile
+  }
+}
+
 export function analyze(sentence) {
   const tokens = tokenize(sentence)
 
   if (tokens.length === 0) {
     const errors = detectErrors(sentence, { subject: null, auxiliary: null, mainVerb: null })
+    const profile = getErrorProfile()
     return {
       sentence,
       clause: null,
       tokens: [],
       errors,
       correction: "",
-      exercises: []
+      exercises: [],
+      profile
     }
   }
 
@@ -239,6 +319,12 @@ export function analyze(sentence) {
   }
 
   const errors = detectErrors(sentence, clause)
+  let profile = getErrorProfile()
+
+  if (errors.length > 0) {
+    const concepts = errors.map((error) => error.concept)
+    profile = recordConceptErrors(concepts)
+  }
 
   return {
     sentence,
@@ -250,6 +336,7 @@ export function analyze(sentence) {
     })),
     errors,
     correction: buildCorrection(sentence, errors, clause),
-    exercises: generateExercises(errors, clause)
+    exercises: generateExercises(errors, clause, profile),
+    profile
   }
 }

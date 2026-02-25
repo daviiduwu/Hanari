@@ -5,42 +5,290 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hanari · English Linguistics Trainer</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
-    textarea { width: 100%; min-height: 80px; padding: 0.75rem; }
-    button { margin-top: 0.75rem; padding: 0.6rem 1rem; }
-    .card { margin-top: 1rem; border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem; }
-    .error { border-left: 4px solid #c0392b; padding-left: 0.75rem; margin: 0.75rem 0; }
-    .ok { color: #1f8b4c; }
+    :root {
+      --bg: #f7f8fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --border: #e5e7eb;
+      --success: #1f8b4c;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 1rem;
+    }
+
+    .brand {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #e2e8f0;
+      background: transparent;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .menu button.active,
+    .menu button:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .content {
+      padding: 1rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero h2 { margin-top: 0; }
+
+    .level {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .placeholder { color: var(--muted); }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+    }
+
+    button.primary {
+      margin-top: 0.7rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 0.95rem;
+      cursor: pointer;
+    }
+
+    .error {
+      border-left: 4px solid var(--danger);
+      padding-left: 0.7rem;
+      margin: 0.7rem 0;
+    }
+
+    .ok { color: var(--success); }
+    .exercise { border-top: 1px dashed var(--border); padding-top: 0.75rem; margin-top: 0.75rem; }
+    .feedback { margin-top: 0.45rem; font-size: 0.95rem; }
     ul { padding-left: 1rem; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 10; }
+      .menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
   </style>
 </head>
 <body>
-  <h1>Hanari · Entrenador lingüístico de inglés</h1>
-  <p>Analiza, corrige y genera práctica desde los errores conceptuales.</p>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1 class="brand">Hanari</h1>
+      <ul class="menu" id="menuList">
+        <li><button class="active" data-section="home">Inicio</button></li>
+        <li><button data-section="yo">Yo (usuario)</button></li>
+        <li><button data-section="recursos">Recursos</button></li>
+        <li><button data-section="herramientas">Herramientas</button></li>
+        <li><button data-section="juegos">Juegos</button></li>
+        <li><button data-section="comunidad">Comunidad</button></li>
+        <li><button data-section="donaciones">Donaciones</button></li>
+        <li><button data-section="opciones">Opciones</button></li>
+        <li><button data-section="signout">Sign out</button></li>
+      </ul>
+    </aside>
 
-  <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
-  <button id="analyzeBtn">Analizar oración</button>
+    <main class="content">
+      <section id="section-home" class="section active">
+        <article class="card hero">
+          <h2>Página principal</h2>
+          <p>Aprende inglés como sistema lingüístico: estructura, auxiliares, aspecto verbal y concordancia.</p>
+          <div class="level">
+            <div>
+              <strong>Nivel actual:</strong> <span id="userLevel">Nivel 1 · Inicio</span>
+              <p id="levelDetails" class="placeholder">Aún no hay suficientes intentos para calcular progresión fina.</p>
+            </div>
+            <div>
+              <span class="pill" id="masteryPill">Mastery global: 0%</span>
+            </div>
+          </div>
+        </article>
+      </section>
 
-  <section id="clauseResult" class="card"></section>
-  <section id="feedbackResult" class="card"></section>
-  <section class="card">
-    <h3>Tokens y etiquetas</h3>
-    <ul id="tokenResult"></ul>
-  </section>
-  <section class="card">
-    <h3>Ejercicios generados</h3>
-    <ul id="exerciseResult"></ul>
-  </section>
+      <section id="section-yo" class="section">
+        <article class="card">
+          <h2>Yo (usuario)</h2>
+          <p class="placeholder">Aquí irá perfil, streak diario, logros y progreso por concepto.</p>
+        </article>
+      </section>
+
+      <section id="section-recursos" class="section">
+        <article class="card">
+          <h2>Recursos</h2>
+          <p class="placeholder">Zona para transcripciones, lecturas y recursos lingüísticos curados.</p>
+        </article>
+      </section>
+
+      <section id="section-herramientas" class="section">
+        <article class="card">
+          <h2>Herramientas · Analizador de oraciones</h2>
+          <p>Analiza, corrige y entrena con adaptación por concepto.</p>
+
+          <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+          <button id="analyzeBtn" class="primary">Analizar oración</button>
+        </article>
+
+        <section id="clauseResult" class="card"></section>
+        <section id="feedbackResult" class="card"></section>
+
+        <section class="card">
+          <h3>Tokens y etiquetas</h3>
+          <ul id="tokenResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Perfil adaptativo</h3>
+          <ul id="profileResult"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Ejercicios generados</h3>
+          <div id="exerciseResult"></div>
+        </section>
+      </section>
+
+      <section id="section-juegos" class="section"><article class="card"><h2>Juegos</h2><p class="placeholder">Módulo RPG lingüístico (próxima iteración).</p></article></section>
+      <section id="section-comunidad" class="section"><article class="card"><h2>Comunidad</h2><p class="placeholder">Rankings, clubes y retos colaborativos.</p></article></section>
+      <section id="section-donaciones" class="section"><article class="card"><h2>Donaciones</h2><p class="placeholder">Soporte al proyecto y roadmap comunitario.</p></article></section>
+      <section id="section-opciones" class="section"><article class="card"><h2>Opciones</h2><p class="placeholder">Preferencias de idioma, tema y accesibilidad.</p></article></section>
+      <section id="section-signout" class="section"><article class="card"><h2>Sign out</h2><p class="placeholder">Cierre de sesión (pendiente de autenticación).</p></article></section>
+    </main>
+  </div>
 
   <script type="module">
-    import { analyze } from "./src/linguistics/analyzer.js"
+    import { analyze, evaluateExercise } from "./src/linguistics/analyzer.js"
+    import { getErrorProfile } from "./src/linguistics/errorProfile.js"
+
+    const menuList = document.getElementById("menuList")
+    const sections = Array.from(document.querySelectorAll(".section"))
+    const userLevel = document.getElementById("userLevel")
+    const levelDetails = document.getElementById("levelDetails")
+    const masteryPill = document.getElementById("masteryPill")
 
     const sentenceInput = document.getElementById("sentenceInput")
     const clauseResult = document.getElementById("clauseResult")
     const feedbackResult = document.getElementById("feedbackResult")
     const tokenResult = document.getElementById("tokenResult")
     const exerciseResult = document.getElementById("exerciseResult")
+    const profileResult = document.getElementById("profileResult")
     const analyzeBtn = document.getElementById("analyzeBtn")
+
+    let latestResult = null
+    let latestProfile = getErrorProfile()
+    let exerciseStates = {}
+
+    function switchSection(sectionId) {
+      sections.forEach((section) => {
+        section.classList.toggle("active", section.id === `section-${sectionId}`)
+      })
+
+      menuList.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.section === sectionId)
+      })
+    }
+
+    menuList.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-section]")
+      if (!btn) return
+      switchSection(btn.dataset.section)
+    })
+
+    function calculateGlobalLevel(profile) {
+      const concepts = Object.values(profile?.concepts ?? {})
+      if (!concepts.length) {
+        return { label: "Nivel 1 · Inicio", mastery: 0, detail: "Aún no hay suficientes intentos para calcular progresión fina." }
+      }
+
+      const avgMastery = concepts.reduce((acc, s) => acc + (s.mastery ?? 0), 0) / concepts.length
+      const level = Math.max(1, Math.min(20, Math.floor(avgMastery * 20) || 1))
+      return {
+        label: `Nivel ${level}`,
+        mastery: avgMastery,
+        detail: `Progreso estimado con ${concepts.length} conceptos activos.`
+      }
+    }
+
+    function renderHome(profile) {
+      const levelData = calculateGlobalLevel(profile)
+      userLevel.textContent = levelData.label
+      masteryPill.textContent = `Mastery global: ${(levelData.mastery * 100).toFixed(0)}%`
+      levelDetails.textContent = levelData.detail
+    }
 
     function renderFeedback(result) {
       if (!result.errors.length) {
@@ -64,18 +312,95 @@
       `
     }
 
-    function renderExercises(exercises) {
-      exerciseResult.innerHTML = exercises
-        .map((ex) => `<li><strong>${ex.type}</strong> · ${ex.prompt}<br/><em>Respuesta:</em> ${ex.answer}</li>`)
-        .join("") || "<li>No hay ejercicios porque no se detectaron errores.</li>"
+    function renderProfile(profile) {
+      const concepts = Object.entries(profile?.concepts ?? {})
+      profileResult.innerHTML = concepts.length
+        ? concepts.map(([name, stats]) => `
+            <li><strong>${name}</strong> · intentos: ${stats.attempts} · aciertos: ${stats.correct} · fallos: ${stats.mistakes} · mastery: ${(stats.mastery * 100).toFixed(0)}%</li>
+          `).join("")
+        : "<li>Sin historial todavía.</li>"
     }
 
-    function render(result) {
+    function readExerciseAnswer(exercise) {
+      if (exercise.type === "single-choice") {
+        const checked = document.querySelector(`input[name='${exercise.id}']:checked`)
+        return checked ? checked.value : ""
+      }
+
+      if (exercise.type === "multi-select") {
+        return Array.from(document.querySelectorAll(`input[name='${exercise.id}']:checked`)).map((el) => el.value)
+      }
+
+      return document.getElementById(`answer-${exercise.id}`)?.value ?? ""
+    }
+
+    function buildExerciseFields(exercise) {
+      if (exercise.type === "single-choice") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="radio" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      if (exercise.type === "multi-select") {
+        return (exercise.options ?? []).map((opt) => `<label><input type="checkbox" name="${exercise.id}" value="${opt}"> ${opt}</label><br/>`).join("")
+      }
+
+      return `<input id="answer-${exercise.id}" type="text" placeholder="Escribe tu respuesta" />`
+    }
+
+    function submitExercise(exerciseId) {
+      const exercise = latestResult?.exercises?.find((item) => item.id === exerciseId)
+      if (!exercise) return
+
+      const userAnswer = readExerciseAnswer(exercise)
+      const evaluation = evaluateExercise(exercise, userAnswer)
+      latestProfile = evaluation.profile
+      exerciseStates[exerciseId] = {
+        isCorrect: evaluation.isCorrect,
+        feedback: evaluation.feedback,
+        expectedAnswers: evaluation.expectedAnswers
+      }
+
+      renderExercises(latestResult.exercises)
+      renderProfile(latestProfile)
+      renderHome(latestProfile)
+    }
+
+    window.submitExercise = submitExercise
+
+    function renderExercises(exercises) {
+      if (!exercises.length) {
+        exerciseResult.innerHTML = "<p>No hay ejercicios porque no se detectaron errores.</p>"
+        return
+      }
+
+      exerciseResult.innerHTML = exercises.map((exercise) => {
+        const status = exerciseStates[exercise.id]
+        const reveal = status && !status.isCorrect
+
+        return `
+          <article class="exercise" id="exercise-${exercise.id}">
+            <div><strong>${exercise.type}</strong> <span class="pill">${exercise.difficulty}</span> <span class="pill">${exercise.focus}</span></div>
+            <p>${exercise.prompt}</p>
+            <div>${buildExerciseFields(exercise)}</div>
+            <button type="button" class="primary" onclick="submitExercise('${exercise.id}')">Responder</button>
+            ${status ? `<p class="feedback">${status.feedback}</p>` : ""}
+            ${reveal ? `<p class="feedback"><strong>Respuesta esperada:</strong> ${status.expectedAnswers.join(" | ")}</p>` : ""}
+          </article>
+        `
+      }).join("")
+    }
+
+    function renderAnalyzer(result) {
+      latestResult = result
+      latestProfile = result.profile
+      exerciseStates = {}
+
       if (!result.clause) {
         clauseResult.innerHTML = "<strong>Sin datos.</strong> Escribe una oración para analizar."
         tokenResult.innerHTML = ""
         renderFeedback(result)
         renderExercises(result.exercises)
+        renderProfile(result.profile)
+        renderHome(result.profile)
         return
       }
 
@@ -88,18 +413,21 @@
         <p><strong>Function:</strong> ${result.clause.function}</p>
       `
 
-      tokenResult.innerHTML = result.tokens
-        .map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`)
-        .join("")
+      tokenResult.innerHTML = result.tokens.map((t) => `<li><strong>${t.token}</strong> → ${t.tags.join(", ")}</li>`).join("")
 
       renderFeedback(result)
       renderExercises(result.exercises)
+      renderProfile(result.profile)
+      renderHome(result.profile)
     }
 
     analyzeBtn.addEventListener("click", () => {
       const result = analyze(sentenceInput.value)
-      render(result)
+      renderAnalyzer(result)
+      switchSection("herramientas")
     })
+
+    renderHome(latestProfile)
   </script>
 </body>
 </html>
