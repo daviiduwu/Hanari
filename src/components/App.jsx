@@ -1,7 +1,7 @@
-import TestAnalyzer from "./components/TestAnalyzer"
+import TestAnalyzer from "./TestAnalyzer"
 
-function App(){
-  return <TestAnalyzer/>
+function App() {
+  return <TestAnalyzer />
 }
 
 export default App
