@@ -275,7 +275,7 @@ function generateExercises(errors, clause, profile) {
   })
 }
 
-function detectErrors(sentence, clause) {
+function detectErrors(sentence, clause, context = {}) {
   const errors = []
 
   if (!sentence.trim()) {
@@ -286,6 +286,8 @@ function detectErrors(sentence, clause) {
   const lowerSubject = clause.subject?.toLowerCase()
   const lowerAux = clause.auxiliary?.toLowerCase()
   const lowerMainVerb = clause.mainVerb?.toLowerCase()
+  const tokens = context.tokens ?? []
+  const auxiliaryIndex = context.auxiliaryIndex ?? -1
 
   if (lowerSubject && lowerAux && SUBJECT_AUX_RULES[lowerSubject] && !SUBJECT_AUX_RULES[lowerSubject].has(lowerAux)) {
     const suggestion = suggestAuxiliary(lowerSubject, lowerAux)
@@ -304,7 +306,11 @@ function detectErrors(sentence, clause) {
     }))
   }
 
-  if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "")) {
+  const hasBeenAfterHave = lowerAux && HAVE_AUX.has(lowerAux) && auxiliaryIndex >= 0
+    ? tokens.slice(auxiliaryIndex + 1).some((token) => token.toLowerCase() === "been")
+    : false
+
+  if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "") && !hasBeenAfterHave) {
     errors.push(explainError("PERFECT_WITHOUT_PARTICIPLE", {
       auxiliary: clause.auxiliary,
       suggestion: "Use a past participle after have/has/had."
@@ -319,9 +325,13 @@ export function evaluateExercise(exercise, userAnswer) {
     ? userAnswer.map(normalizeText).filter(Boolean).sort()
     : [normalizeText(userAnswer)].filter(Boolean)
 
-  const normalizedExpected = (exercise.expectedAnswers ?? []).map(normalizeText).filter(Boolean).sort()
+  const normalizedExpected = (exercise.expectedAnswers ?? []).map(normalizeText).filter(Boolean)
+  const isMultiSelect = exercise.type === "multi-select"
 
-  const isCorrect = normalizedUser.length > 0 && JSON.stringify(normalizedUser) === JSON.stringify(normalizedExpected)
+  const isCorrect = isMultiSelect
+    ? normalizedUser.length > 0 && JSON.stringify(normalizedUser) === JSON.stringify([...normalizedExpected].sort())
+    : normalizedUser.length > 0 && normalizedUser.some((value) => normalizedExpected.includes(value))
+
   const profile = recordExerciseOutcome(exercise.focus, isCorrect)
 
   return {
@@ -338,7 +348,7 @@ export function analyze(sentence) {
   const tokens = tokenize(sentence)
 
   if (tokens.length === 0) {
-    const errors = detectErrors(sentence, { subject: null, auxiliary: null, mainVerb: null })
+    const errors = detectErrors(sentence, { subject: null, auxiliary: null, mainVerb: null }, { tokens: [], auxiliaryIndex: -1 })
     const profile = getErrorProfile()
     return {
       sentence,
@@ -365,7 +375,7 @@ export function analyze(sentence) {
     function: inferFunction(aspect)
   }
 
-  const errors = detectErrors(sentence, clause)
+  const errors = detectErrors(sentence, clause, { tokens, auxiliaryIndex })
   let profile = getErrorProfile()
 
   if (errors.length > 0) {
