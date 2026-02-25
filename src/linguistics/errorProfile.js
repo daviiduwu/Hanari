@@ -54,7 +54,9 @@ function readStorage() {
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultProfile()
+    if (!raw) {
+      return memoryStore.updatedAt ? normalizeProfile(memoryStore) : defaultProfile()
+    }
     return normalizeProfile(JSON.parse(raw))
   } catch {
     return defaultProfile()
@@ -70,8 +72,14 @@ function writeStorage(profile) {
     return normalized
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
-  return normalized
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+    return normalized
+  } catch {
+    memoryStore.updatedAt = normalized.updatedAt
+    memoryStore.concepts = normalized.concepts
+    return normalized
+  }
 }
 
 function updateConceptStats(current, { isCorrect, countMistake }) {

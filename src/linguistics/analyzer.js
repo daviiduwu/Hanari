@@ -24,6 +24,9 @@ const PRONOUN_SUBJECTS = new Set(["i", "you", "he", "she", "it", "we", "they"])
 const NEGATION_MARKERS = new Set(["not", "n't"])
 const WH_WORDS = new Set(["what", "why", "how", "when", "where", "who", "whom", "whose", "which"])
 
+const DETERMINERS = new Set(["a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their"])
+const COMMON_HAVE_OBJECTS = new Set(["lunch", "breakfast", "dinner", "fun", "time", "trouble", "class", "coffee", "tea", "work"])
+
 const SUBJECT_AUX_RULES = {
   i: new Set(["am", "was", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
   you: new Set(["are", "were", "have", "had", "do", "did", "will", "would", "can", "could", "may", "might", "must", "should", "shall"]),
@@ -118,8 +121,8 @@ function detectClauseCore(tokens) {
   const first = tokens[0].toLowerCase()
   const second = tokens[1]?.toLowerCase()
 
-  // Question inversion: "Will you ...", "Can she ..."
-  if (MODAL_AUX.has(first) && PRONOUN_SUBJECTS.has(second)) {
+  // Question inversion: "Will you ...", "Is she ...", "Do they ..."
+  if (AUXILIARIES.has(first) && PRONOUN_SUBJECTS.has(second)) {
     const auxiliaryIndex = 0
     const subject = tokens[1]
     const mainVerb = findMainVerb(tokens, auxiliaryIndex, 1)
@@ -416,6 +419,27 @@ function generateExercises(errors, clause, profile) {
   })
 }
 
+
+function isLikelyLexicalHave(tokens, auxiliaryIndex, lowerMainVerb) {
+  if (auxiliaryIndex < 0) return false
+
+  const nextToken = tokens[auxiliaryIndex + 1]?.toLowerCase() ?? ""
+  const nextNextToken = tokens[auxiliaryIndex + 2]?.toLowerCase() ?? ""
+
+  if (nextToken === "to") return true
+  if (DETERMINERS.has(nextToken)) return true
+  if (COMMON_HAVE_OBJECTS.has(nextToken)) return true
+
+  // Pattern: have + determiner + noun
+  if (DETERMINERS.has(nextToken) && nextNextToken && !AUXILIARIES.has(nextNextToken)) return true
+
+  // If main verb looks nominal-ish and no perfect markers around, treat as lexical-have candidate.
+  const noPerfectMarkers = !/ed$|en$/.test(lowerMainVerb || "") && nextToken !== "been"
+  if (noPerfectMarkers && COMMON_HAVE_OBJECTS.has(lowerMainVerb || "")) return true
+
+  return false
+}
+
 function detectErrors(sentence, clause, context = {}) {
   const errors = []
 
@@ -451,7 +475,11 @@ function detectErrors(sentence, clause, context = {}) {
     ? tokens.slice(auxiliaryIndex + 1).some((token) => token.toLowerCase() === "been")
     : false
 
-  if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "") && !hasBeenAfterHave) {
+  const lexicalHaveCandidate = lowerAux && HAVE_AUX.has(lowerAux)
+    ? isLikelyLexicalHave(tokens, auxiliaryIndex, lowerMainVerb)
+    : false
+
+  if (lowerAux && HAVE_AUX.has(lowerAux) && !/ed$|en$/.test(lowerMainVerb || "") && !hasBeenAfterHave && !lexicalHaveCandidate) {
     errors.push(explainError("PERFECT_WITHOUT_PARTICIPLE", {
       auxiliary: clause.auxiliary,
       suggestion: "Use a past participle after have/has/had."
