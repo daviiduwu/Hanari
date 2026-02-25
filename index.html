@@ -245,6 +245,42 @@
     .calendar-theme.weather-snowy { background: #f8fbff; }
     .calendar-theme.weather-storm { background: #f3f0ff; }
     .chart-wrapper { overflow-x: auto; }
+
+    .flashcard-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem;
+      margin-top: 0.75rem;
+      background: #fafafa;
+    }
+    .flashcard-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .flashcard-term { font-size: 1.4rem; margin: 0; }
+    .flashcard-meta { color: var(--muted); margin: 0.2rem 0 0; }
+    .flashcard-answer {
+      border-top: 1px dashed var(--border);
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+    }
+    .flashcard-actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+    }
+    .flashcard-actions button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    .repo-list li { margin-bottom: 0.4rem; }
     ul { padding-left: 1rem; }
 
     @media (max-width: 900px) {
@@ -419,6 +455,25 @@
             </ul>
           </details>
         </article>
+
+        <article class="card">
+          <h3>Flashcards (Spaced Repetition)</h3>
+          <p>Subsección para vocabulario de inglés con <strong>IPA</strong>, <strong>categoría gramatical</strong> y <strong>traducción al español</strong>, usando repetición espaciada local (SM-2 simplificado).</p>
+
+          <h4>Repositorios GitHub recomendados para integrar</h4>
+          <ul class="repo-list">
+            <li><a href="https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler" target="_blank" rel="noopener noreferrer">open-spaced-repetition/free-spaced-repetition-scheduler</a> (motor SRS libre).</li>
+            <li><a href="https://github.com/ankitects/anki" target="_blank" rel="noopener noreferrer">ankitects/anki</a> (referencia de ecosistema SRS).</li>
+            <li><a href="https://github.com/cmusphinx/cmudict" target="_blank" rel="noopener noreferrer">cmusphinx/cmudict</a> (pronunciación para enriquecer IPA).</li>
+          </ul>
+
+          <p class="placeholder">Importa un mazo JSON desde un repositorio GitHub (URL RAW). Formato por tarjeta: <code>{"term":"thought","ipa":"/θɔːt/","pos":"NOUN","translationEs":"pensamiento","example":"That thought changed my plan."}</code></p>
+          <input id="flashcardRepoUrl" type="text" placeholder="https://raw.githubusercontent.com/usuario/repo/main/deck.json" />
+          <button id="importFlashcardsBtn" class="primary" type="button">Importar mazo desde GitHub</button>
+          <p id="flashcardImportStatus" class="placeholder"></p>
+
+          <div class="flashcard-box" id="flashcardBox"></div>
+        </article>
       </section>
 
       <section id="section-herramientas" class="section">
@@ -518,6 +573,11 @@
     const yoNextYearBtn = document.getElementById("yoNextYearBtn")
     const yoProgressChart = document.getElementById("yoProgressChart")
 
+    const flashcardRepoUrl = document.getElementById("flashcardRepoUrl")
+    const importFlashcardsBtn = document.getElementById("importFlashcardsBtn")
+    const flashcardImportStatus = document.getElementById("flashcardImportStatus")
+    const flashcardBox = document.getElementById("flashcardBox")
+
     let latestResult = null
     let latestProfile = getErrorProfile()
     let exerciseStates = {}
@@ -535,6 +595,20 @@
       fetchedAt: 0,
       inFlight: null
     }
+
+    const FLASHCARD_STORE_KEY = "hanari-flashcards-v1"
+    const FLASHCARD_SRS_KEY = "hanari-flashcards-srs-v1"
+    const STARTER_FLASHCARDS = [
+      { term: "thought", ipa: "/θɔːt/", pos: "NOUN", translationEs: "pensamiento", example: "That thought changed my plan." },
+      { term: "study", ipa: "/ˈstʌdi/", pos: "VERB", translationEs: "estudiar", example: "I study linguistics every day." },
+      { term: "auxiliary", ipa: "/ɔːɡˈzɪliəri/", pos: "NOUN", translationEs: "auxiliar", example: "Do is an auxiliary in questions." },
+      { term: "agreement", ipa: "/əˈɡriːmənt/", pos: "NOUN", translationEs: "concordancia", example: "Subject-verb agreement is essential." },
+      { term: "late", ipa: "/leɪt/", pos: "ADJ", translationEs: "tarde", example: "She is late for class." }
+    ]
+    let flashcards = []
+    let flashcardQueue = []
+    let currentFlashcard = null
+    let revealFlashcard = false
 
     function defaultProgressState() {
       return {
@@ -816,6 +890,170 @@
       })
     }
 
+    function normalizeFlashcard(item) {
+      return {
+        id: item.id ?? `${String(item.term ?? "").toLowerCase()}-${String(item.pos ?? "lex").toLowerCase()}`,
+        term: String(item.term ?? "").trim(),
+        ipa: String(item.ipa ?? "").trim(),
+        pos: String(item.pos ?? "LEX").trim().toUpperCase(),
+        translationEs: String(item.translationEs ?? item.translation ?? "").trim(),
+        example: String(item.example ?? "").trim()
+      }
+    }
+
+    function loadFlashcards() {
+      try {
+        const raw = window.localStorage.getItem(FLASHCARD_STORE_KEY)
+        const parsed = raw ? JSON.parse(raw) : STARTER_FLASHCARDS
+        flashcards = parsed.map(normalizeFlashcard).filter((c) => c.term && c.translationEs)
+      } catch {
+        flashcards = STARTER_FLASHCARDS.map(normalizeFlashcard)
+      }
+      if (!flashcards.length) flashcards = STARTER_FLASHCARDS.map(normalizeFlashcard)
+    }
+
+    function saveFlashcards() {
+      try { window.localStorage.setItem(FLASHCARD_STORE_KEY, JSON.stringify(flashcards)) } catch {}
+    }
+
+    function loadSrsState() {
+      try { return JSON.parse(window.localStorage.getItem(FLASHCARD_SRS_KEY) || "{}") } catch { return {} }
+    }
+
+    function saveSrsState(state) {
+      try { window.localStorage.setItem(FLASHCARD_SRS_KEY, JSON.stringify(state)) } catch {}
+    }
+
+    function getCardSrs(cardId) {
+      const store = loadSrsState()
+      return store[cardId] ?? { interval: 0, ease: 2.5, reps: 0, dueAt: 0 }
+    }
+
+    function setCardSrs(cardId, next) {
+      const store = loadSrsState()
+      store[cardId] = next
+      saveSrsState(store)
+    }
+
+    function buildDueFlashcardQueue() {
+      const now = Date.now()
+      const withSrs = flashcards.map((card) => ({ card, srs: getCardSrs(card.id) }))
+      const due = withSrs.filter((entry) => (entry.srs.dueAt ?? 0) <= now).map((entry) => entry.card)
+      const fallback = withSrs.sort((a, b) => (a.srs.dueAt ?? 0) - (b.srs.dueAt ?? 0)).map((entry) => entry.card)
+      flashcardQueue = due.length ? due : fallback
+    }
+
+    function pickNextFlashcard() {
+      buildDueFlashcardQueue()
+      currentFlashcard = flashcardQueue[0] ?? null
+      revealFlashcard = false
+      renderFlashcards()
+    }
+
+    function computeSm2(srs, quality) {
+      let ease = srs.ease ?? 2.5
+      let reps = srs.reps ?? 0
+      let interval = srs.interval ?? 0
+
+      if (quality < 3) {
+        reps = 0
+        interval = 1
+      } else {
+        reps += 1
+        if (reps === 1) interval = 1
+        else if (reps === 2) interval = 3
+        else interval = Math.max(1, Math.round(interval * ease))
+      }
+
+      ease = Math.max(1.3, ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
+      return {
+        reps,
+        interval,
+        ease,
+        dueAt: Date.now() + interval * 24 * 60 * 60 * 1000
+      }
+    }
+
+    function reviewFlashcard(quality) {
+      if (!currentFlashcard) return
+      const srs = getCardSrs(currentFlashcard.id)
+      const next = computeSm2(srs, quality)
+      setCardSrs(currentFlashcard.id, next)
+
+      const progress = getProgressState()
+      progress.grammarAnswered = (progress.grammarAnswered ?? 0) + 1
+      if (quality >= 3) progress.grammarCorrect = (progress.grammarCorrect ?? 0) + 1
+      progress.wordsLearned[currentFlashcard.term.toLowerCase()] = true
+      markStudyDay(progress)
+      saveProgressState(progress)
+
+      pickNextFlashcard()
+      renderYoSection(latestProfile)
+    }
+
+    function renderFlashcards() {
+      if (!flashcardBox) return
+      if (!currentFlashcard) {
+        flashcardBox.innerHTML = `<p>No hay tarjetas disponibles.</p>`
+        return
+      }
+
+      const dueCount = flashcardQueue.length
+      flashcardBox.innerHTML = `
+        <div class="flashcard-head">
+          <div>
+            <p class="flashcard-term">${currentFlashcard.term}</p>
+            <p class="flashcard-meta">${currentFlashcard.ipa || "IPA pendiente"} · ${currentFlashcard.pos}</p>
+          </div>
+          <span class="pill">Tarjetas pendientes: ${dueCount}</span>
+        </div>
+
+        ${revealFlashcard ? `
+          <div class="flashcard-answer">
+            <p><strong>Traducción:</strong> ${currentFlashcard.translationEs}</p>
+            <p><strong>Ejemplo:</strong> ${currentFlashcard.example || "Sin ejemplo"}</p>
+            <div class="flashcard-actions">
+              <button type="button" onclick="reviewFlashcard(2)">Again</button>
+              <button type="button" onclick="reviewFlashcard(3)">Hard</button>
+              <button type="button" onclick="reviewFlashcard(4)">Good</button>
+              <button type="button" onclick="reviewFlashcard(5)">Easy</button>
+            </div>
+          </div>
+        ` : `<button type="button" class="primary" onclick="revealCurrentFlashcard()">Mostrar respuesta</button>`}
+      `
+    }
+
+    function revealCurrentFlashcard() {
+      revealFlashcard = true
+      renderFlashcards()
+    }
+
+    async function importFlashcardsFromGithub() {
+      const url = flashcardRepoUrl?.value?.trim()
+      if (!url) {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = "Escribe una URL RAW de GitHub para importar."
+        return
+      }
+
+      try {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = "Importando mazo..."
+        const response = await fetch(url)
+        if (!response.ok) throw new Error("No se pudo descargar el JSON")
+        const payload = await response.json()
+        const deck = Array.isArray(payload) ? payload : (payload.cards ?? [])
+        const normalized = deck.map(normalizeFlashcard).filter((c) => c.term && c.translationEs)
+        if (!normalized.length) throw new Error("El mazo no trae tarjetas válidas")
+
+        flashcards = normalized
+        saveFlashcards()
+        pickNextFlashcard()
+
+        if (flashcardImportStatus) flashcardImportStatus.textContent = `Mazo importado: ${normalized.length} flashcards.`
+      } catch (error) {
+        if (flashcardImportStatus) flashcardImportStatus.textContent = `Importación fallida: ${error.message}`
+      }
+    }
+
     function switchSection(sectionId) {
       sections.forEach((section) => {
         section.classList.toggle("active", section.id === `section-${sectionId}`)
@@ -831,6 +1069,10 @@
       if (!btn) return
       switchSection(btn.dataset.section)
     })
+
+    if (importFlashcardsBtn) {
+      importFlashcardsBtn.addEventListener("click", importFlashcardsFromGithub)
+    }
 
     function calculateGlobalLevel(profile) {
       const concepts = Object.values(profile?.concepts ?? {})
@@ -1001,6 +1243,8 @@
     }
 
     window.submitExercise = submitExercise
+    window.reviewFlashcard = reviewFlashcard
+    window.revealCurrentFlashcard = revealCurrentFlashcard
 
     function renderExercises(exercises) {
       if (!exercises.length) {
@@ -1077,6 +1321,8 @@
       switchSection("herramientas")
     })
 
+    loadFlashcards()
+    pickNextFlashcard()
     renderHome(latestProfile)
   </script>
 </body>
