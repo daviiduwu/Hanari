@@ -137,6 +137,30 @@
     .ok { color: var(--success); }
     .exercise { border-top: 1px dashed var(--border); padding-top: 0.75rem; margin-top: 0.75rem; }
     .feedback { margin-top: 0.45rem; font-size: 0.95rem; }
+    .lesson-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .lesson-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: #f8fafc;
+    }
+    .lesson-card h4 { margin: 0 0 0.4rem; }
+    details.lesson-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.6rem;
+      background: #fff;
+    }
+    details.lesson-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
     ul { padding-left: 1rem; }
 
     @media (max-width: 900px) {
@@ -191,6 +215,88 @@
         <article class="card">
           <h2>Recursos</h2>
           <p class="placeholder">Zona para transcripciones, lecturas y recursos lingüísticos curados.</p>
+        </article>
+
+        <article class="card">
+          <h3>Lecciones de inglés</h3>
+          <p>Ruta base para estudiar inglés como sistema lingüístico, desde fundamentos (A1) hasta precisión avanzada (C2).</p>
+
+          <div class="lesson-grid">
+            <article class="lesson-card">
+              <h4>¿Qué es el IPA?</h4>
+              <p>El Alfabeto Fonético Internacional (IPA) representa sonidos reales, no ortografía. Ejemplo: <strong>thought</strong> /θɔːt/.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Categorías gramaticales</h4>
+              <p>NOUN, VERB, ADJ, ADV, PRON, DET, PREP, CONJ, AUX: cada categoría cumple una función en la estructura profunda.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Morfología</h4>
+              <p>Estudia cómo se forman palabras (raíces, prefijos, sufijos, flexión), p.ej. <em>study → studied / studying</em>.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Sintaxis</h4>
+              <p>Analiza cómo se combinan palabras en cláusulas: sujeto, núcleo verbal, complementos y relaciones de dependencia.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Pragmática</h4>
+              <p>Explica intención y contexto: pedir, sugerir, corregir, ser formal/informal y gestionar cortesía.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Fonología</h4>
+              <p>Describe patrones de sonido: vocales, consonantes, sílaba, acento, reducción y entonación en habla real.</p>
+            </article>
+          </div>
+
+          <h3>Plan por nivel (A1 → C2)</h3>
+
+          <details class="lesson-item" open>
+            <summary>A1 · Fundamentos</summary>
+            <ul>
+              <li>Pronombres, verbo <em>to be</em>, artículos y orden básico SVO.</li>
+              <li>IPA mínimo: vocales cortas/largas y pares básicos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>A2 · Construcción de hábito</summary>
+            <ul>
+              <li>Presente simple/progresivo, frecuencia, preguntas con DO/DOES.</li>
+              <li>Morfología verbal básica: tercera persona singular y -ing.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B1 · Expansión estructural</summary>
+            <ul>
+              <li>Pasado simple/progresivo, introducción al presente perfecto.</li>
+              <li>Funciones gramaticales: objeto directo/indirecto y complementos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B2 · Precisión funcional</summary>
+            <ul>
+              <li>Perfecto vs perfecto progresivo, voz pasiva, modales de probabilidad.</li>
+              <li>Pragmática aplicada: registro y matiz en contexto académico/profesional.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C1 · Competencia avanzada</summary>
+            <ul>
+              <li>Subordinación compleja, inversión marcada, cohesión discursiva.</li>
+              <li>Fonología avanzada: connected speech, weak forms, stress contrastivo.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C2 · Maestría lingüística</summary>
+            <ul>
+              <li>Control fino de estilo, ironía, implicaturas y pragmática intercultural.</li>
+              <li>Análisis morfosintáctico profundo y reformulación nativa.</li>
+            </ul>
+          </details>
         </article>
       </section>
 
