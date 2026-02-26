@@ -1,53 +1,725 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Hanari</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanari · English Linguistics Trainer</title>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --border: #e5e7eb;
+      --success: #1f8b4c;
+      --danger: #c0392b;
+      --sidebar-bg: #0f172a;
+      --sidebar-border: #334155;
+      --sidebar-hover: #1e293b;
+      --sidebar-text: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --card: #111a2e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #243047;
+      --primary: #60a5fa;
+      --sidebar-bg: #020617;
+      --sidebar-border: #1f2937;
+      --sidebar-hover: #111827;
+      --sidebar-text: #f3f4f6;
+    }
+
+    body[data-theme="black"] {
+      --bg: #000000;
+      --card: #000000;
+      --text: #ffffff;
+      --muted: #d1d5db;
+      --border: #2a2a2a;
+      --primary: #22d3ee;
+      --sidebar-bg: #000000;
+      --sidebar-border: #2a2a2a;
+      --sidebar-hover: #101010;
+      --sidebar-text: #ffffff;
+    }
+
+    body.a11y-large-text {
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    body.a11y-high-contrast {
+      --bg: #000000;
+      --card: #000000;
+      --text: #ffffff;
+      --muted: #e5e7eb;
+      --border: #ffffff;
+      --primary: #facc15;
+      --success: #4ade80;
+      --danger: #f87171;
+      --sidebar-bg: #000000;
+      --sidebar-border: #ffffff;
+      --sidebar-hover: #111111;
+      --sidebar-text: #ffffff;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      padding: 1rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .brand {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #e2e8f0;
+      background: transparent;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .menu button.active,
+    .menu button:hover {
+      background: var(--sidebar-hover);
+      border-color: var(--sidebar-border);
+    }
+
+    .content {
+      padding: 1rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero h2 { margin-top: 0; }
+
+    .level {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .placeholder { color: var(--muted); }
+
+    textarea, input[type="text"], select {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+      background: color-mix(in srgb, var(--card) 78%, var(--bg));
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    textarea::placeholder, input[type="text"]::placeholder {
+      color: var(--muted);
+    }
+
+    button.primary {
+      margin-top: 0.7rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 0.95rem;
+      cursor: pointer;
+    }
+
+    .error {
+      border-left: 4px solid var(--danger);
+      padding-left: 0.7rem;
+      margin: 0.7rem 0;
+    }
+
+    .ok { color: var(--success); }
+    .exercise { border-top: 1px dashed var(--border); padding-top: 0.75rem; margin-top: 0.75rem; }
+    .feedback { margin-top: 0.45rem; font-size: 0.95rem; }
+    .lesson-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .lesson-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: color-mix(in srgb, var(--card) 82%, var(--bg));
+    }
+    .lesson-card h4 { margin: 0 0 0.4rem; }
+    details.lesson-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.6rem;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
+    }
+    details.lesson-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .calendar-toolbar {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+    .calendar-year-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .calendar-year-nav button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
+      cursor: pointer;
+    }
+    .calendar-meta {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.7rem;
+    }
+    .month-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.5rem;
+      background: color-mix(in srgb, var(--card) 86%, var(--bg));
+    }
+    .month-title {
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      font-size: 0.92rem;
+    }
+    .month-weekdays,
+    .month-days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.2rem;
+    }
+    .month-weekdays span {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .day-cell {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-height: 30px;
+      padding: 0.15rem;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+    .day-cell.studied {
+      background: color-mix(in srgb, var(--card) 78%, #22c55e);
+      border-color: color-mix(in srgb, var(--border) 60%, #22c55e);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .day-cell.today {
+      border-color: #2563eb;
+      box-shadow: inset 0 0 0 1px #2563eb;
+    }
+    .day-cell.empty {
+      border-color: transparent;
+      background: transparent;
+    }
+    .calendar-theme {
+      transition: background-color 0.2s ease;
+    }
+    .calendar-theme.weather-sunny { background: color-mix(in srgb, var(--card) 88%, #facc15); }
+    .calendar-theme.weather-rainy { background: color-mix(in srgb, var(--card) 88%, #60a5fa); }
+    .calendar-theme.weather-cloudy { background: color-mix(in srgb, var(--card) 92%, #9ca3af); }
+    .calendar-theme.weather-snowy { background: color-mix(in srgb, var(--card) 95%, #dbeafe); }
+    .calendar-theme.weather-storm { background: color-mix(in srgb, var(--card) 88%, #a78bfa); }
+    .chart-wrapper { overflow-x: auto; }
+
+    .flashcard-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem;
+      margin-top: 0.75rem;
+      background: color-mix(in srgb, var(--card) 88%, var(--bg));
+    }
+    .flashcard-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .flashcard-term { font-size: 1.4rem; margin: 0; }
+    .flashcard-meta { color: var(--muted); margin: 0.2rem 0 0; }
+    .flashcard-answer {
+      border-top: 1px dashed var(--border);
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+    }
+    .flashcard-actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+    }
+    .flashcard-actions button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
+      color: var(--text);
+      cursor: pointer;
+    }
+    .repo-list li { margin-bottom: 0.4rem; }
+
+    
+    .subsection-nav {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin: 0 0 0.9rem;
+    }
+    .subsection-nav button {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      background: color-mix(in srgb, var(--card) 86%, var(--bg));
+      color: var(--text);
+      cursor: pointer;
+    }
+    .subsection-nav button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: transparent;
+    }
+    .subsection-card { display: none; }
+    .subsection-card.active { display: block; }
+.settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .setting-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: var(--card);
+    }
+
+    .setting-item h4 { margin: 0 0 0.35rem; }
+    .setting-item input[type="color"] {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      padding: 0.2rem;
+      cursor: pointer;
+    }
+    ul { padding-left: 1rem; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 10; }
+      .menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
 </head>
 <body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1 class="brand">Hanari</h1>
+      <ul class="menu" id="menuList">
+        <li><button class="active" data-section="home">Inicio</button></li>
+        <li><button data-section="yo">Yo</button></li>
+        <li><button data-section="recursos">Recursos</button></li>
+        <li><button data-section="herramientas">Herramientas</button></li>
+        <li><button data-section="juegos">Juegos</button></li>
+        <li><button data-section="comunidad">Comunidad</button></li>
+        <li><button data-section="donaciones">Donaciones</button></li>
+        <li><button data-section="opciones">Opciones</button></li>
+        <li><button data-section="signout">Sign out</button></li>
+      </ul>
+    </aside>
 
-<h1>English Linguistics Trainer</h1>
+    <main class="content">
+      <section id="section-home" class="section active">
+        <article class="card hero">
+          <h2>Página principal</h2>
+          <p>Aprende inglés como sistema lingüístico: estructura, auxiliares, aspecto verbal y concordancia.</p>
+          <div class="level">
+            <div>
+              <strong>Nivel actual:</strong> <span id="userLevel">Nivel 1 · Inicio</span>
+              <p id="levelDetails" class="placeholder">Aún no hay suficientes intentos para calcular progresión fina.</p>
+            </div>
+            <div>
+              <span class="pill" id="masteryPill">Mastery global: 0%</span>
+            </div>
+          </div>
+        </article>
+      </section>
 
-<p>Escribe una oración en inglés para analizarla:</p>
+      <section id="section-yo" class="section">
+        <article class="card">
+          <h2>Yo</h2>
+          <p>Panel personal para gestionar perfil, metas y progreso de aprendizaje lingüístico.</p>
+        </article>
 
-<input type="text" id="sentenceInput" placeholder="She is studying English" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+        <nav class="subsection-nav" data-subsection-nav="yo">
+          <button class="active" type="button" data-subsection="perfil">Perfil</button>
+          <button type="button" data-subsection="metas">Metas</button>
+          <button type="button" data-subsection="stats">Stats</button>
+          <button type="button" data-subsection="calendario">Calendario</button>
+          <button type="button" data-subsection="progreso">Progreso</button>
+        </nav>
 
-<button onclick="analyzeSentence()">Analizar oración</button>
+        <article class="card subsection-card active" data-subsection-group="yo" data-subsection="perfil">
+          <h3>Perfil</h3>
+          <p><strong>Nivel actual:</strong> <span id="yoLevel">Nivel 1</span></p>
+          <p><strong>Palabras aprendidas:</strong> <span id="yoWordsLearned">0</span></p>
+        </article>
 
-<div id="analysis" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;"></div>
+        <article class="card subsection-card" data-subsection-group="yo" data-subsection="metas">
+          <h3>Metas</h3>
+          <p class="placeholder">Escribe metas semanales o mensuales (se guardan en este navegador).</p>
+          <textarea id="yoGoalsInput" placeholder="Ejemplo: dominar presente perfecto esta semana y aprender 30 palabras nuevas."></textarea>
+          <button id="saveGoalsBtn" class="primary" type="button">Guardar metas</button>
+          <p id="yoGoalsStatus" class="placeholder"></p>
+        </article>
 
-<script>
-function analyzeSentence() {
-  const sentence = document.getElementById("sentenceInput").value;
+        <article class="card subsection-card" data-subsection-group="yo" data-subsection="stats">
+          <h3>Stats</h3>
+          <ul id="yoStatsList"></ul>
+        </article>
 
-  // Inicializamos variables
-  let subject = "No identificado";
-  let auxiliary = "No identificado";
-  let mainVerb = "No identificado";
-  let aspect = "No identificado";
-  let func = "No identificado";
+        <article class="card calendar-theme subsection-card" id="yoCalendarPanel" data-subsection-group="yo" data-subsection="calendario">
+          <h3>Calendario de estudio (anual, por meses)</h3>
+          <div class="calendar-toolbar">
+            <div class="calendar-year-nav">
+              <button id="yoPrevYearBtn" type="button" aria-label="Año anterior">◀</button>
+              <strong id="yoCalendarYearLabel"></strong>
+              <button id="yoNextYearBtn" type="button" aria-label="Año siguiente">▶</button>
+            </div>
+            <div id="yoDateWeather" class="calendar-meta"></div>
+          </div>
+          <div id="yoCalendarGrid" class="calendar-grid"></div>
+        </article>
 
-  // Patrón muy básico para oraciones como "She is studying English"
-  const words = sentence.split(" ");
+        <article class="card subsection-card" data-subsection-group="yo" data-subsection="progreso">
+          <h3>Gráfico de progreso en el tiempo (mastery)</h3>
+          <canvas id="yoProgressChart" width="900" height="220" aria-label="Progreso de mastery en el tiempo"></canvas>
+        </article>
+      </section>
 
-  if(words.length >= 3) {
-    subject = words[0];
-    auxiliary = words[1];
-    mainVerb = words[2];
-    aspect = (auxiliary.toLowerCase() === "is" || auxiliary.toLowerCase() === "are") ? "Progressive" : "Simple";
-    func = "acción " + (aspect === "Progressive" ? "en curso" : "general");
-  }
+      <section id="section-recursos" class="section">
+        <article class="card">
+          <h2>Recursos</h2>
+          <p class="placeholder">Zona para transcripciones, lecturas y recursos lingüísticos curados.</p>
+        </article>
 
-  // Mostrar resultado
-  document.getElementById("analysis").innerHTML = `
-    <strong>Oración analizada:</strong> ${sentence}<br>
-    Subject: ${subject}<br>
-    Auxiliary verb: ${auxiliary}<br>
-    Main verb: ${mainVerb}<br>
-    Aspect: ${aspect}<br>
-    Function: ${func}
-  `;
-}
-</script>
+        <nav class="subsection-nav" data-subsection-nav="recursos">
+          <button class="active" type="button" data-subsection="lecciones">Lecciones</button>
+          <button type="button" data-subsection="flashcards">Flashcards</button>
+          <button type="button" data-subsection="repos">Repos</button>
+        </nav>
 
+        <article class="card subsection-card active" data-subsection-group="recursos" data-subsection="lecciones">
+          <h3>Lecciones de inglés</h3>
+          <p>Ruta base para estudiar inglés como sistema lingüístico, desde fundamentos (A1) hasta precisión avanzada (C2).</p>
+
+          <div class="lesson-grid">
+            <article class="lesson-card">
+              <h4>¿Qué es el IPA?</h4>
+              <p>El Alfabeto Fonético Internacional (IPA) representa sonidos reales, no ortografía. Ejemplo: <strong>thought</strong> /θɔːt/.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Categorías gramaticales</h4>
+              <p>NOUN, VERB, ADJ, ADV, PRON, DET, PREP, CONJ, AUX: cada categoría cumple una función en la estructura profunda.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Morfología</h4>
+              <p>Estudia cómo se forman palabras (raíces, prefijos, sufijos, flexión), p.ej. <em>study → studied / studying</em>.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Sintaxis</h4>
+              <p>Analiza cómo se combinan palabras en cláusulas: sujeto, núcleo verbal, complementos y relaciones de dependencia.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Pragmática</h4>
+              <p>Explica intención y contexto: pedir, sugerir, corregir, ser formal/informal y gestionar cortesía.</p>
+            </article>
+            <article class="lesson-card">
+              <h4>Fonología</h4>
+              <p>Describe patrones de sonido: vocales, consonantes, sílaba, acento, reducción y entonación en habla real.</p>
+            </article>
+          </div>
+
+          <h3>Plan por nivel (A1 → C2)</h3>
+
+          <details class="lesson-item" open>
+            <summary>A1 · Fundamentos</summary>
+            <ul>
+              <li>Pronombres, verbo <em>to be</em>, artículos y orden básico SVO.</li>
+              <li>IPA mínimo: vocales cortas/largas y pares básicos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>A2 · Construcción de hábito</summary>
+            <ul>
+              <li>Presente simple/progresivo, frecuencia, preguntas con DO/DOES.</li>
+              <li>Morfología verbal básica: tercera persona singular y -ing.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B1 · Expansión estructural</summary>
+            <ul>
+              <li>Pasado simple/progresivo, introducción al presente perfecto.</li>
+              <li>Funciones gramaticales: objeto directo/indirecto y complementos.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>B2 · Precisión funcional</summary>
+            <ul>
+              <li>Perfecto vs perfecto progresivo, voz pasiva, modales de probabilidad.</li>
+              <li>Pragmática aplicada: registro y matiz en contexto académico/profesional.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C1 · Competencia avanzada</summary>
+            <ul>
+              <li>Subordinación compleja, inversión marcada, cohesión discursiva.</li>
+              <li>Fonología avanzada: connected speech, weak forms, stress contrastivo.</li>
+            </ul>
+          </details>
+
+          <details class="lesson-item">
+            <summary>C2 · Maestría lingüística</summary>
+            <ul>
+              <li>Control fino de estilo, ironía, implicaturas y pragmática intercultural.</li>
+              <li>Análisis morfosintáctico profundo y reformulación nativa.</li>
+            </ul>
+          </details>
+        </article>
+
+        <article class="card subsection-card" data-subsection-group="recursos" data-subsection="flashcards">
+          <h3>Flashcards (Spaced Repetition)</h3>
+          <p>Subsección para vocabulario de inglés con <strong>IPA</strong>, <strong>categoría gramatical</strong> y <strong>traducción al español</strong>, usando repetición espaciada local (SM-2 simplificado).</p>
+
+          <h4>Repositorios GitHub recomendados para integrar</h4>
+          <ul class="repo-list">
+            <li><a href="https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler" target="_blank" rel="noopener noreferrer">open-spaced-repetition/free-spaced-repetition-scheduler</a> (motor SRS libre).</li>
+            <li><a href="https://github.com/ankitects/anki" target="_blank" rel="noopener noreferrer">ankitects/anki</a> (referencia de ecosistema SRS).</li>
+            <li><a href="https://github.com/cmusphinx/cmudict" target="_blank" rel="noopener noreferrer">cmusphinx/cmudict</a> (pronunciación para enriquecer IPA).</li>
+          </ul>
+
+          <p class="placeholder">Importa un mazo JSON desde un repositorio GitHub (URL RAW). Formato por tarjeta: <code>{"term":"thought","ipa":"/θɔːt/","pos":"NOUN","translationEs":"pensamiento","example":"That thought changed my plan."}</code></p>
+          <input id="flashcardRepoUrl" type="text" placeholder="https://raw.githubusercontent.com/usuario/repo/main/deck.json" />
+          <button id="importFlashcardsBtn" class="primary" type="button">Importar mazo desde GitHub</button>
+          <p id="flashcardImportStatus" class="placeholder"></p>
+
+          <div class="flashcard-box" id="flashcardBox"></div>
+        </article>
+
+        <article class="card subsection-card" data-subsection-group="recursos" data-subsection="repos">
+          <h3>Repositorios recomendados</h3>
+          <ul class="repo-list">
+            <li><a href="https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler" target="_blank" rel="noopener noreferrer">open-spaced-repetition/free-spaced-repetition-scheduler</a></li>
+            <li><a href="https://github.com/ankitects/anki" target="_blank" rel="noopener noreferrer">ankitects/anki</a></li>
+            <li><a href="https://github.com/cmusphinx/cmudict" target="_blank" rel="noopener noreferrer">cmusphinx/cmudict</a></li>
+          </ul>
+          <p class="placeholder">Próximo paso: mover esta lista a `src/resources/repositories.json` para versionado y curación comunitaria.</p>
+        </article>
+      </section>
+
+      <section id="section-herramientas" class="section">
+        <article class="card">
+          <h2>Herramientas · Analizador de oraciones</h2>
+          <p>Analiza, corrige y entrena con adaptación por concepto.</p>
+
+          <nav class="subsection-nav" data-subsection-nav="herramientas">
+            <button class="active" type="button" data-subsection="analizador">Analizador</button>
+            <button type="button" data-subsection="feedback">Feedback</button>
+            <button type="button" data-subsection="capas">Capas lingüísticas</button>
+            <button type="button" data-subsection="ejercicios">Ejercicios</button>
+          </nav>
+
+          <textarea id="sentenceInput" placeholder="She have studying English now."></textarea>
+          <button id="analyzeBtn" class="primary">Analizar oración</button>
+        </article>
+
+        <section id="clauseResult" class="card subsection-card active" data-subsection-group="herramientas" data-subsection="analizador"></section>
+        <section id="feedbackResult" class="card subsection-card" data-subsection-group="herramientas" data-subsection="feedback"></section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Tokens y etiquetas</h3>
+          <ul id="tokenResult"></ul>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="feedback">
+          <h3>Perfil adaptativo</h3>
+          <ul id="profileResult"></ul>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Morfología</h3>
+          <ul id="morphologyResult"></ul>
+        </section>
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Menú léxico de palabra seleccionada</h3>
+          <div id="wordDetailResult" class="placeholder">Selecciona una palabra en Morfología para ver etimología, IPA y uso en oración.</div>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Sintaxis (árbol morfosintáctico)</h3>
+          <pre id="syntaxResult" style="white-space: pre-wrap;"></pre>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Semántica</h3>
+          <ul id="semanticsResult"></ul>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="capas">
+          <h3>Pragmática</h3>
+          <ul id="pragmaticsResult"></ul>
+        </section>
+
+        <section class="card subsection-card" data-subsection-group="herramientas" data-subsection="ejercicios">
+          <h3>Ejercicios generados</h3>
+          <div id="exerciseResult"></div>
+        </section>
+      </section>
+
+      <section id="section-juegos" class="section"><article class="card"><h2>Juegos</h2><p class="placeholder">Módulo RPG lingüístico (próxima iteración).</p></article></section>
+      <section id="section-comunidad" class="section"><article class="card"><h2>Comunidad</h2><p class="placeholder">Rankings, clubes y retos colaborativos.</p></article></section>
+      <section id="section-donaciones" class="section"><article class="card"><h2>Donaciones</h2><p class="placeholder">Soporte al proyecto y roadmap comunitario.</p></article></section>
+      <section id="section-opciones" class="section">
+        <article class="card">
+          <h2>Opciones</h2>
+          <p>Configura tema visual, accesibilidad e idioma de interfaz para personalizar tu experiencia.</p>
+
+          <nav class="subsection-nav" data-subsection-nav="opciones">
+            <button class="active" type="button" data-subsection="tema">Tema</button>
+            <button type="button" data-subsection="accesibilidad">Accesibilidad</button>
+            <button type="button" data-subsection="idioma">Idioma</button>
+            <button type="button" data-subsection="personalizacion">Personalización</button>
+          </nav>
+
+          <div class="settings-grid">
+            <section class="setting-item subsection-card active" data-subsection-group="opciones" data-subsection="tema">
+              <h4>Tema</h4>
+              <p class="placeholder">Cambia entre claro y oscuro.</p>
+              <select id="themeSelect">
+                <option value="light">Claro</option>
+                <option value="dark">Oscuro</option>
+                <option value="black">Negro total</option>
+              </select>
+            </section>
+
+            <section class="setting-item subsection-card" data-subsection-group="opciones" data-subsection="accesibilidad">
+              <h4>Accesibilidad</h4>
+              <label><input type="checkbox" id="a11yLargeText"> Texto grande</label><br/>
+              <label><input type="checkbox" id="a11yHighContrast"> Alto contraste</label>
+            </section>
+
+            <section class="setting-item subsection-card" data-subsection-group="opciones" data-subsection="idioma">
+              <h4>Idioma</h4>
+              <p class="placeholder">Idioma de la interfaz (MVP).</p>
+              <select id="languageSelect">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </section>
+
+            <section class="setting-item subsection-card" data-subsection-group="opciones" data-subsection="personalizacion">
+              <h4>Color personalizado</h4>
+              <p class="placeholder">Configura el color principal de la app.</p>
+              <input type="color" id="accentColorPicker" value="#2563eb" aria-label="Color principal" />
+            </section>
+          </div>
+
+          <p id="settingsStatus" class="placeholder"></p>
+        </article>
+      </section>
+      <section id="section-signout" class="section"><article class="card"><h2>Sign out</h2><p class="placeholder">Cierre de sesión (pendiente de autenticación).</p></article></section>
+    </main>
+  </div>
+
+  <script type="module" src="./src/ui/app.js"></script>
 </body>
 </html>
