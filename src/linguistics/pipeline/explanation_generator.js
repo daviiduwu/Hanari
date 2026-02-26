@@ -4,7 +4,8 @@ const ERROR_TO_CONCEPT = {
   SUBJECT_AUX_AGREEMENT: "subject-auxiliary-agreement",
   MISSING_PROGRESSIVE_AUX: "progressive-aspect",
   PERFECT_WITHOUT_PARTICIPLE: "perfect-aspect",
-  COPULAR_COMPLEMENT_AGREEMENT: "copular-complement-agreement"
+  COPULAR_COMPLEMENT_AGREEMENT: "copular-complement-agreement",
+  SUBJECT_VERB_AGREEMENT_SIMPLE_PRESENT: "subject-verb-agreement-simple-present"
 }
 
 function explainError(code, details) {
@@ -23,6 +24,12 @@ function explainError(code, details) {
       title: "Perfecto mal formado",
       why: "El aspecto perfecto requiere HAVE/HAS/HAD + participio pasado.",
       explanation: `El auxiliar '${details.auxiliary}' debería ir con participio (ej. studied, eaten).`
+    },
+
+    SUBJECT_VERB_AGREEMENT_SIMPLE_PRESENT: {
+      title: "Concordancia sujeto-verbo en presente simple",
+      why: "Con sujeto de tercera persona singular (he/she/it), el verbo léxico en presente simple suele requerir terminación -s/-es.",
+      explanation: `El sujeto '${details.subject}' requiere forma verbal de tercera persona. Se detectó '${details.verb}' y se esperaba '${details.expectedVerb}'.`
     },
     COPULAR_COMPLEMENT_AGREEMENT: {
       title: "Complemento nominal en cópula",

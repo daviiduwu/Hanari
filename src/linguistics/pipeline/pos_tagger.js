@@ -1,5 +1,5 @@
-const AUX = new Set(["am", "is", "are", "was", "were", "be", "been", "being", "do", "does", "did", "have", "has", "had", "will", "would", "shall", "should", "can", "could", "may", "might", "must"])
-const PRON = new Set(["i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them"])
+import { getPosCandidates, isAuxiliaryCandidate } from "./lexicon_manager.js"
+
 const DET = new Set(["a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their"])
 const PREP = new Set(["to", "for", "with", "in", "on", "at", "from", "of", "by", "about", "into", "over", "under"])
 const CONJ = new Set(["and", "or", "but", "so", "because", "although"])
@@ -18,18 +18,32 @@ export function tagPosTokens(tokenObjects) {
     const w = token.normalized
     const prev = arr[idx - 1]?.normalized
     const next = arr[idx + 1]?.normalized
+    const lexPos = getPosCandidates(w)
 
-    if (AUX.has(w)) return { ...token, pos: "AUX", tags: ["auxiliary"] }
-    if (PRON.has(w)) return { ...token, pos: "PRON", tags: ["pronoun"] }
+    if (isAuxiliaryCandidate(w)) return { ...token, pos: "AUX", tags: ["auxiliary", "lexicon-backed"] }
+    if (lexPos.includes("pronoun")) return { ...token, pos: "PRON", tags: ["pronoun", "lexicon-backed"] }
     if (DET.has(w)) return { ...token, pos: "DET", tags: ["determiner"] }
     if (PREP.has(w)) return { ...token, pos: "PREP", tags: ["preposition"] }
     if (CONJ.has(w)) return { ...token, pos: "CONJ", tags: ["conjunction"] }
     if (PARTICLES.has(w)) return { ...token, pos: "PART", tags: ["particle"] }
     if (w.endsWith("ly")) return { ...token, pos: "ADV", tags: ["adverb"] }
+
+    if (lexPos.includes("verb") && !lexPos.includes("noun")) {
+      return { ...token, pos: "VERB", tags: ["verb", "lexicon-backed"] }
+    }
+
     if (isVerbLike(w)) return { ...token, pos: "VERB", tags: ["verb-form"] }
 
     if (prev && DET.has(prev)) return { ...token, pos: "NOUN", tags: ["noun-after-det"] }
-    if (prev && AUX.has(prev) && !(next && PREP.has(next))) return { ...token, pos: "VERB", tags: ["verb-after-aux"] }
+    if (prev && isAuxiliaryCandidate(prev) && !(next && PREP.has(next))) return { ...token, pos: "VERB", tags: ["verb-after-aux"] }
+
+    const prevPrev = arr[idx - 2]?.normalized
+    const prevIsPronoun = prev ? getPosCandidates(prev).includes("pronoun") : false
+    if (lexPos.includes("verb") && prevIsPronoun && prevPrev && isAuxiliaryCandidate(prevPrev)) {
+      return { ...token, pos: "VERB", tags: ["verb-question-inversion"] }
+    }
+
+    if (lexPos.includes("noun")) return { ...token, pos: "NOUN", tags: ["noun", "lexicon-backed"] }
 
     return { ...token, pos: "NOUN", tags: ["default-noun-lex"] }
   })

@@ -1,3 +1,5 @@
+import { getVerbProfile, inferVerbForm } from "./lexicon_manager.js"
+
 const AUXILIARIES = new Set([
   "am", "is", "are", "was", "were", "be", "been", "being",
   "do", "does", "did",
@@ -176,6 +178,17 @@ export function detectClauseCore(tokens) {
   return { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement: null, verbRole: auxiliary ? "auxiliary" : "lexical" }
 }
 
+
+function isThirdPersonSingularSubject(subject) {
+  const s = String(subject ?? "").toLowerCase().trim()
+  return ["he", "she", "it"].includes(s)
+}
+
+function expectedThirdPersonForm(mainVerb) {
+  const entry = getVerbProfile(mainVerb)
+  return entry?.forms?.thirdPersonSingular ?? null
+}
+
 function getBeAuxForSubject(subject) {
   const s = subject?.toLowerCase()
   if (s === "i") return "am"
@@ -237,6 +250,24 @@ export function validateClauseGrammar(clause, tokens = []) {
         suggestion: `${aux} ${clause.mainVerb}`
       }
     })
+  }
+
+  if (!lowerAux && lowerMainVerb && isThirdPersonSingularSubject(lowerSubject)) {
+    const verbEntry = getVerbProfile(lowerMainVerb)
+    const observedForm = inferVerbForm(lowerMainVerb, verbEntry)
+    const expectedForm = expectedThirdPersonForm(lowerMainVerb)
+
+    if (verbEntry?.syntax?.requires3rdPersonSingularS && observedForm === "base" && expectedForm) {
+      errors.push({
+        code: "SUBJECT_VERB_AGREEMENT_SIMPLE_PRESENT",
+        details: {
+          subject: clause.subject,
+          verb: clause.mainVerb,
+          expectedVerb: expectedForm,
+          suggestion: `Use '${expectedForm}' with third-person singular subject.`
+        }
+      })
+    }
   }
 
   const hasBeenAfterHave = lowerAux && HAVE_AUX.has(lowerAux) && auxiliaryIndex >= 0

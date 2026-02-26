@@ -15,6 +15,7 @@ import { detectClauseCore } from "./pipeline/grammar_engine.js"
 import { analyzeVerbPhrase } from "./pipeline/verb_analyzer.js"
 import { buildSyntaxTree, formatTreeBracket } from "./pipeline/sentence_tree_builder.js"
 import { detectErrors } from "./pipeline/explanation_generator.js"
+import { getLexiconEntry } from "./pipeline/lexicon_manager.js"
 
 const AUXILIARIES = new Set([
   "am", "is", "are", "was", "were", "be", "been", "being",
@@ -61,14 +62,19 @@ function inferTags(token) {
 
 function inferPos(token, tags = []) {
   const lower = token.toLowerCase()
+  const lexiconEntry = getLexiconEntry(token)
+  const lexiconPos = lexiconEntry?.pos ?? []
   if (tags.includes("subject-pronoun")) return "PRON"
   if (tags.includes("auxiliary")) return "AUX"
   if (tags.includes("adverb")) return "ADV"
   if (tags.includes("verb")) return "VERB"
+  if (lexiconPos.includes("verb") && !lexiconPos.includes("noun")) return "VERB"
   if (WH_WORDS.has(lower)) return "WH"
+  if (lexiconPos.includes("pronoun")) return "PRON"
   if (["a", "an", "the"].includes(lower)) return "DET"
   if (["and", "or", "but"].includes(lower)) return "CONJ"
   if (["to", "for", "with", "in", "on", "at", "from", "of"].includes(lower)) return "PREP"
+  if (lexiconPos.includes("noun")) return "NOUN"
   return "NOUN/LEX"
 }
 
@@ -76,11 +82,12 @@ function analyzeMorphology(tokens) {
   return tokens.map((token) => {
     const tags = inferTags(token)
     const lower = token.toLowerCase()
-    const lemma = lower.endsWith("ing")
+    const lexiconEntry = getLexiconEntry(token)
+    const lemma = lexiconEntry?.lemma ?? (lower.endsWith("ing")
       ? lower.replace(/ing$/, "")
       : lower.endsWith("ed")
         ? lower.replace(/ed$/, "")
-        : lower
+        : lower)
 
     const features = []
     if (PRONOUN_SUBJECTS.has(lower)) features.push("pronoun")
@@ -95,6 +102,7 @@ function analyzeMorphology(tokens) {
       token,
       lemma,
       pos: inferPos(token, tags),
+      lexicon: lexiconEntry ? { lemma: lexiconEntry.lemma, pos: lexiconEntry.pos } : null,
       features,
       knowledge
     }

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hanari.dev/schemas/rule-definition.schema.json",
+  "title": "RuleDefinition",
+  "type": "object",
+  "required": ["id", "version", "status", "domain", "level", "priority", "scope", "preconditions", "explain", "tags"],
+  "properties": {
+    "id": { "type": "string", "minLength": 3 },
+    "version": { "type": "string" },
+    "status": { "enum": ["active", "deprecated", "experimental"] },
+    "domain": { "enum": ["agreement", "aspect", "auxiliary", "syntax", "pragmatics"] },
+    "level": { "enum": ["A1", "A2", "B1", "B2", "C1", "C2"] },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 1000 },
+    "scope": {
+      "type": "object",
+      "required": ["sentenceTypes"],
+      "properties": {
+        "sentenceTypes": {
+          "type": "array",
+          "items": { "enum": ["declarative", "question", "imperative", "fragment"] },
+          "minItems": 1
+        },
+        "registers": {
+          "type": "array",
+          "items": { "enum": ["neutral", "informal", "spoken"] }
+        },
+        "dialects": {
+          "type": "array",
+          "items": { "enum": ["en-US", "en-GB", "global"] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "preconditions": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "explain": {
+      "type": "object",
+      "required": ["concept", "pedagogicalTemplateId"],
+      "properties": {
+        "concept": { "type": "string" },
+        "pedagogicalTemplateId": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "fixStrategy": {
+      "type": "object",
+      "required": ["enabled", "mode"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": { "enum": ["rewrite", "hint-only"] }
+      },
+      "additionalProperties": false
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

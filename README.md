@@ -15,7 +15,8 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 - `src/linguistics/pipeline/`
   - Módulos base desacoplados del análisis:
     - `tokenizer.js`: tokenización con puntuación y contracciones.
-    - `pos_tagger.js`: POS tagging híbrido (reglas + contexto local).
+    - `lexicon_manager.js`: conocimiento léxico estructurado (POS, formas verbales, irregularidades, rasgos de concordancia).
+    - `pos_tagger.js`: POS tagging híbrido (reglas + contexto local + respaldo del lexicón).
     - `grammar_engine.js`: detección de núcleo clausal + validación gramatical declarativa.
     - `verb_analyzer.js`: tiempo/aspecto/función verbal.
     - `sentence_tree_builder.js`: árbol sintáctico básico y salida bracketed.
@@ -43,6 +44,7 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 4. Detecta errores gramaticales iniciales:
    - concordancia sujeto-auxiliar,
    - progresivo sin auxiliar,
+   - concordancia sujeto-verbo en presente simple sin auxiliar (ej. `He go to school`),
    - perfecto sin participio.
    - desacuerdo en complemento nominal copulativo (ej. `She is my girlfriends`).
 5. Explica cada error en lenguaje pedagógico y propone corrección.
@@ -60,3 +62,11 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
 1. Separar plantillas de ejercicios por concepto en `src/linguistics/exerciseTemplates.js`.
 2. Añadir parser de dependencias incremental (`src/linguistics/dependencyParser.js`) para enriquecer árbol y roles.
 3. Conectar pragmática con contexto conversacional (historial de turnos) para tutor IA.
+
+## Diseño P0 documentado (sin implementación)
+
+- `docs/architecture/nlp-p0/rule-registry-contract.md`: contrato del registro de reglas (prioridad, scope, conflictos).
+- `docs/architecture/nlp-p0/reasoning-trace-contract.md`: contrato del trace de razonamiento auditable.
+- `docs/architecture/nlp-p0/rule-catalog-p0.md`: catálogo inicial de reglas con prioridad y conflict keys.
+- `docs/architecture/nlp-p0/migration-plan.md`: migración incremental legacy -> registry.
+- `docs/architecture/nlp-p0/schemas/*.json`: JSON Schema de contratos para validación futura.
