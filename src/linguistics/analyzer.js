@@ -9,6 +9,8 @@ import {
   recordExerciseOutcome
 } from "./errorProfile.js"
 import { getWordKnowledge } from "./corpora/etymologyIpaCorpus.js"
+import { tokenizeSentence } from "./pipeline/tokenizer.js"
+import { tagPosTokens } from "./pipeline/pos_tagger.js"
 
 const AUXILIARIES = new Set([
   "am", "is", "are", "was", "were", "be", "been", "being",
@@ -52,15 +54,6 @@ function normalizeText(value) {
     .toLowerCase()
     .replace(/[.,!?;:]/g, "")
     .replace(/\s+/g, " ")
-}
-
-function tokenize(text) {
-  return text
-    .trim()
-    .replace(/\s+/g, " ")
-    .split(" ")
-    .map((raw) => raw.replace(/^[^a-zA-Z']+|[^a-zA-Z']+$/g, ""))
-    .filter(Boolean)
 }
 
 function getBeAuxForSubject(subject) {
@@ -153,6 +146,7 @@ function findCopularPredicateHead(tokens, auxiliaryIndex, subjectIndex) {
     if (NEGATION_MARKERS.has(lower) || i === subjectIndex || FUNCTION_WORDS.has(lower)) continue
     candidate = tokens[i]
     if (isLikelyAdjective(tokens[i])) return tokens[i]
+    if (isParticipleLike(tokens[i])) return tokens[i]
   }
 
   return candidate ?? findMainVerb(tokens, auxiliaryIndex, subjectIndex)
@@ -214,12 +208,15 @@ function detectClauseCore(tokens) {
     return { subject: "(you)", auxiliary: null, auxiliaryIndex: -1, mainVerb: tokens[1] ?? null, predicateComplement: null, verbRole: "lexical" }
   }
 
-  const subject = tokens[0] ?? null
-  const auxiliaryIndex = tokens.findIndex((t, idx) => idx > 0 && AUXILIARIES.has(t.toLowerCase()))
+  const isDeterminerLedSubject = DETERMINERS.has(first) && tokens[1] && !AUXILIARIES.has(second || "")
+  const subject = isDeterminerLedSubject ? `${tokens[0]} ${tokens[1]}` : (tokens[0] ?? null)
+  const subjectIndex = isDeterminerLedSubject ? 1 : 0
+
+  const auxiliaryIndex = tokens.findIndex((t, idx) => idx > subjectIndex && AUXILIARIES.has(t.toLowerCase()))
   const auxiliary = auxiliaryIndex >= 0 ? tokens[auxiliaryIndex] : null
 
   if (auxiliary && HAVE_AUX.has(auxiliary.toLowerCase())) {
-    const candidateAfterHave = findMainVerb(tokens, auxiliaryIndex, 0)
+    const candidateAfterHave = findMainVerb(tokens, auxiliaryIndex, subjectIndex)
     if (isLikelyLexicalHaveCore(tokens, auxiliaryIndex, candidateAfterHave?.toLowerCase())) {
       return {
         subject,
@@ -233,7 +230,7 @@ function detectClauseCore(tokens) {
   }
 
   if (auxiliary && BE_AUX.has(auxiliary.toLowerCase())) {
-    const predicateHead = findCopularPredicateHead(tokens, auxiliaryIndex, 0)
+    const predicateHead = findCopularPredicateHead(tokens, auxiliaryIndex, subjectIndex)
     const interpretation = chooseClauseInterpretation({ auxiliary, predicateHead })
 
     if (interpretation === "copular") {
@@ -248,7 +245,7 @@ function detectClauseCore(tokens) {
     }
   }
 
-  const mainVerb = findMainVerb(tokens, auxiliaryIndex, 0)
+  const mainVerb = findMainVerb(tokens, auxiliaryIndex, subjectIndex)
   return { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement: null, verbRole: auxiliary ? "auxiliary" : "lexical" }
 }
 
@@ -639,15 +636,22 @@ export function evaluateExercise(exercise, userAnswer) {
 }
 
 export function analyze(sentence) {
-  const tokens = tokenize(sentence)
+  const tokenObjects = tokenizeSentence(sentence)
+  const taggedTokens = tagPosTokens(tokenObjects)
+  const lexicalTokens = taggedTokens.filter((token) => token.pos !== "PUNCT").map((token) => token.surface)
 
-  if (tokens.length === 0) {
+  if (lexicalTokens.length === 0) {
     const errors = detectErrors(sentence, { subject: null, auxiliary: null, mainVerb: null }, { tokens: [], auxiliaryIndex: -1 })
     const profile = getErrorProfile()
     return {
       sentence,
       clause: null,
-      tokens: [],
+      tokens: taggedTokens.map((t) => ({
+        index: t.index,
+        token: t.surface,
+        pos: t.pos,
+        tags: t.tags
+      })),
       morphology: [],
       syntax: null,
       semantics: null,
@@ -659,9 +663,9 @@ export function analyze(sentence) {
     }
   }
 
-  const { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement, verbRole } = detectClauseCore(tokens)
+  const { subject, auxiliary, auxiliaryIndex, mainVerb, predicateComplement, verbRole } = detectClauseCore(lexicalTokens)
 
-  const aspect = inferAspect(auxiliary, mainVerb, tokens, auxiliaryIndex)
+  const aspect = inferAspect(auxiliary, mainVerb, lexicalTokens, auxiliaryIndex)
   const clause = {
     subject,
     auxiliary,
@@ -672,7 +676,7 @@ export function analyze(sentence) {
     function: inferFunction(aspect)
   }
 
-  const errors = detectErrors(sentence, clause, { tokens, auxiliaryIndex })
+  const errors = detectErrors(sentence, clause, { tokens: lexicalTokens, auxiliaryIndex })
   let profile = getErrorProfile()
 
   if (errors.length > 0) {
@@ -680,24 +684,25 @@ export function analyze(sentence) {
     profile = recordConceptErrors(concepts)
   }
 
-  const morphology = analyzeMorphology(tokens)
-  const syntaxTree = buildSyntaxTree(clause, tokens)
+  const morphology = analyzeMorphology(lexicalTokens)
+  const syntaxTree = buildSyntaxTree(clause, lexicalTokens)
 
   return {
     sentence,
     clause,
-    tokens: tokens.map((token, index) => ({
-      index,
-      token,
-      tags: inferTags(token)
+    tokens: taggedTokens.map((token) => ({
+      index: token.index,
+      token: token.surface,
+      pos: token.pos,
+      tags: token.tags?.length ? token.tags : inferTags(token.surface)
     })),
     morphology,
     syntax: {
       tree: syntaxTree,
       bracketed: formatTreeBracket(syntaxTree)
     },
-    semantics: analyzeSemantics(clause, tokens),
-    pragmatics: analyzePragmatics(sentence, clause, tokens),
+    semantics: analyzeSemantics(clause, lexicalTokens),
+    pragmatics: analyzePragmatics(sentence, clause, lexicalTokens),
     errors,
     correction: buildCorrection(sentence, errors, clause),
     exercises: generateExercises(errors, clause, profile),

@@ -11,7 +11,11 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
   - Incluye menú con secciones: Inicio, Yo, Recursos, Herramientas, Juegos, Comunidad, Donaciones, Opciones, Sign out.
   - La sección **Herramientas** contiene el analizador de oraciones y ejercicios adaptativos.
 - `src/linguistics/analyzer.js`
-  - Núcleo lingüístico rule-based y multicapa.
+  - Orquestador lingüístico rule-based y multicapa.
+- `src/linguistics/pipeline/`
+  - Módulos base desacoplados del análisis:
+    - `tokenizer.js`: tokenización con puntuación y contracciones.
+    - `pos_tagger.js`: POS tagging híbrido (reglas + contexto local).
   - Analiza cláusula, detecta errores, genera correcciones/ejercicios y evalúa respuestas.
   - Incluye un módulo de inferencia heurística (IA local simbólica) para decidir entre lectura auxiliar vs copulativa.
   - Añade capas lingüísticas MVP: morfología, sintaxis (árbol morfosintáctico), semántica y pragmática.
