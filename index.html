@@ -168,6 +168,13 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       min-height: 44px;
+      background: color-mix(in srgb, var(--card) 78%, var(--bg));
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    textarea::placeholder, input[type="text"]::placeholder {
+      color: var(--muted);
     }
 
     button.primary {
@@ -199,7 +206,7 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0.75rem;
-      background: #f8fafc;
+      background: color-mix(in srgb, var(--card) 82%, var(--bg));
     }
     .lesson-card h4 { margin: 0 0 0.4rem; }
     details.lesson-item {
@@ -207,7 +214,7 @@
       border-radius: 10px;
       padding: 0.6rem 0.75rem;
       margin-bottom: 0.6rem;
-      background: #fff;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
     }
     details.lesson-item summary {
       cursor: pointer;
@@ -230,7 +237,7 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 0.35rem 0.6rem;
-      background: #fff;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
       cursor: pointer;
     }
     .calendar-meta {
@@ -246,7 +253,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 0.5rem;
-      background: #fff;
+      background: color-mix(in srgb, var(--card) 86%, var(--bg));
     }
     .month-title {
       font-weight: 700;
@@ -275,9 +282,9 @@
       justify-content: flex-end;
     }
     .day-cell.studied {
-      background: #dcfce7;
-      border-color: #86efac;
-      color: #166534;
+      background: color-mix(in srgb, var(--card) 78%, #22c55e);
+      border-color: color-mix(in srgb, var(--border) 60%, #22c55e);
+      color: var(--text);
       font-weight: 700;
     }
     .day-cell.today {
@@ -291,11 +298,11 @@
     .calendar-theme {
       transition: background-color 0.2s ease;
     }
-    .calendar-theme.weather-sunny { background: #fffbe6; }
-    .calendar-theme.weather-rainy { background: #eef6ff; }
-    .calendar-theme.weather-cloudy { background: #f3f4f6; }
-    .calendar-theme.weather-snowy { background: #f8fbff; }
-    .calendar-theme.weather-storm { background: #f3f0ff; }
+    .calendar-theme.weather-sunny { background: color-mix(in srgb, var(--card) 88%, #facc15); }
+    .calendar-theme.weather-rainy { background: color-mix(in srgb, var(--card) 88%, #60a5fa); }
+    .calendar-theme.weather-cloudy { background: color-mix(in srgb, var(--card) 92%, #9ca3af); }
+    .calendar-theme.weather-snowy { background: color-mix(in srgb, var(--card) 95%, #dbeafe); }
+    .calendar-theme.weather-storm { background: color-mix(in srgb, var(--card) 88%, #a78bfa); }
     .chart-wrapper { overflow-x: auto; }
 
     .flashcard-box {
@@ -303,7 +310,7 @@
       border-radius: 12px;
       padding: 0.9rem;
       margin-top: 0.75rem;
-      background: #fafafa;
+      background: color-mix(in srgb, var(--card) 88%, var(--bg));
     }
     .flashcard-head {
       display: flex;
@@ -329,7 +336,8 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 0.45rem 0.7rem;
-      background: #fff;
+      background: color-mix(in srgb, var(--card) 90%, var(--bg));
+      color: var(--text);
       cursor: pointer;
     }
     .repo-list li { margin-bottom: 0.4rem; }
@@ -345,7 +353,7 @@
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 0.35rem 0.7rem;
-      background: var(--card);
+      background: color-mix(in srgb, var(--card) 86%, var(--bg));
       color: var(--text);
       cursor: pointer;
     }
