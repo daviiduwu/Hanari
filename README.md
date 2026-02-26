@@ -16,8 +16,12 @@ MVP de analizador lingüístico para aprendizaje de inglés con enfoque estructu
   - Módulos base desacoplados del análisis:
     - `tokenizer.js`: tokenización con puntuación y contracciones.
     - `pos_tagger.js`: POS tagging híbrido (reglas + contexto local).
+    - `grammar_engine.js`: detección de núcleo clausal + validación gramatical declarativa.
+    - `verb_analyzer.js`: tiempo/aspecto/función verbal.
+    - `sentence_tree_builder.js`: árbol sintáctico básico y salida bracketed.
+    - `explanation_generator.js`: transformación de errores técnicos a feedback pedagógico.
   - Analiza cláusula, detecta errores, genera correcciones/ejercicios y evalúa respuestas.
-  - Incluye un módulo de inferencia heurística (IA local simbólica) para decidir entre lectura auxiliar vs copulativa.
+  - Incluye inferencia heurística (IA local simbólica) para decidir entre lectura auxiliar vs copulativa.
   - Añade capas lingüísticas MVP: morfología, sintaxis (árbol morfosintáctico), semántica y pragmática.
 - `src/linguistics/errorProfile.js`
   - Perfil adaptativo por concepto usando `localStorage` (con fallback en memoria).
