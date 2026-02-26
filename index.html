@@ -43,6 +43,19 @@
       --sidebar-text: #f3f4f6;
     }
 
+    body[data-theme="black"] {
+      --bg: #000000;
+      --card: #000000;
+      --text: #ffffff;
+      --muted: #d1d5db;
+      --border: #2a2a2a;
+      --primary: #22d3ee;
+      --sidebar-bg: #000000;
+      --sidebar-border: #2a2a2a;
+      --sidebar-hover: #101010;
+      --sidebar-text: #ffffff;
+    }
+
     body.a11y-large-text {
       font-size: 18px;
       line-height: 1.55;
@@ -335,6 +348,15 @@
     }
 
     .setting-item h4 { margin: 0 0 0.35rem; }
+    .setting-item input[type="color"] {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      padding: 0.2rem;
+      cursor: pointer;
+    }
     ul { padding-left: 1rem; }
 
     @media (max-width: 900px) {
@@ -597,6 +619,7 @@
               <select id="themeSelect">
                 <option value="light">Claro</option>
                 <option value="dark">Oscuro</option>
+                <option value="black">Negro total</option>
               </select>
             </section>
 
@@ -613,6 +636,12 @@
                 <option value="es">Español</option>
                 <option value="en">English</option>
               </select>
+            </section>
+
+            <section class="setting-item">
+              <h4>Color personalizado</h4>
+              <p class="placeholder">Configura el color principal de la app.</p>
+              <input type="color" id="accentColorPicker" value="#2563eb" aria-label="Color principal" />
             </section>
           </div>
 
@@ -669,6 +698,7 @@
     const a11yLargeText = document.getElementById("a11yLargeText")
     const a11yHighContrast = document.getElementById("a11yHighContrast")
     const languageSelect = document.getElementById("languageSelect")
+    const accentColorPicker = document.getElementById("accentColorPicker")
     const settingsStatus = document.getElementById("settingsStatus")
 
     let latestResult = null
@@ -1144,7 +1174,8 @@
           largeText: false,
           highContrast: false
         },
-        language: "es"
+        language: "es",
+        accentColor: "#2563eb"
       }
     }
 
@@ -1184,7 +1215,10 @@
     }
 
     function applySettingsToUi(settings) {
-      document.body.setAttribute("data-theme", settings.theme === "dark" ? "dark" : "light")
+      const theme = ["light", "dark", "black"].includes(settings.theme) ? settings.theme : "light"
+      document.body.setAttribute("data-theme", theme)
+      const accentColor = /^#[0-9a-fA-F]{6}$/.test(settings.accentColor ?? "") ? settings.accentColor : "#2563eb"
+      document.documentElement.style.setProperty("--primary", accentColor)
       document.body.classList.toggle("a11y-large-text", !!settings.accessibility.largeText)
       document.body.classList.toggle("a11y-high-contrast", !!settings.accessibility.highContrast)
 
@@ -1192,6 +1226,7 @@
       if (a11yLargeText) a11yLargeText.checked = !!settings.accessibility.largeText
       if (a11yHighContrast) a11yHighContrast.checked = !!settings.accessibility.highContrast
       if (languageSelect) languageSelect.value = settings.language
+      if (accentColorPicker) accentColorPicker.value = accentColor
 
       applyLanguage(settings.language)
     }
@@ -1251,6 +1286,12 @@
     if (languageSelect) {
       languageSelect.addEventListener("change", () => {
         updateSettings({ language: languageSelect.value })
+      })
+    }
+
+    if (accentColorPicker) {
+      accentColorPicker.addEventListener("input", () => {
+        updateSettings({ accentColor: accentColorPicker.value })
       })
     }
 
